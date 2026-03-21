@@ -4,8 +4,12 @@ export interface AnalysisResult {
   features: Feature[];
   totals: {
     electricityKwh: number;
-    waterLiters: number;
     carbonKgCo2e: number;
+    sci: {
+      averageScore: number;
+      highestFeature: string;
+      unit: string;
+    };
   };
   history: HistoryEntry[];
 }
@@ -22,10 +26,19 @@ export interface Feature {
   };
   sustainability: {
     electricityKwh: number;
-    waterLiters: number;
     carbonKgCo2e: number;
     isEstimated: boolean;
     infrastructureTag: string | null;
+    sci: {
+      score: number;
+      unit: string;
+      components: {
+        E_per_R: number;
+        I: number;
+        M_per_R: number;
+      };
+      functionalUnit: string;
+    };
   };
   sustainabilityTier: 'high' | 'medium' | 'low';
   suggestions: Suggestion[];
@@ -49,7 +62,6 @@ export interface HistoryEntry {
   suggestionId: string;
   patternType: string;
   savingsElectricityKwh: number;
-  savingsWaterLiters: number;
   savingsCarbonKgCo2e: number;
 }
 
