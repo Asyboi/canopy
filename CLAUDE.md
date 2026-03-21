@@ -3,7 +3,7 @@
 ## What this is
 Local Node.js/Express analysis server for the Canopy VS Code extension and web dashboard.
 Analyzes TypeScript/JavaScript codebases: segments them into features, scores complexity,
-estimates sustainability impact (electricity, water, carbon), and detects inefficiency patterns
+estimates sustainability impact (electricity, carbon), and detects inefficiency patterns
 with AI-generated greener alternatives.
 
 ## File structure
@@ -22,7 +22,7 @@ server/
 │   │   ├── clusterMerge.ts       # Step 3: union-find merge
 │   │   ├── featureLabeling.ts    # Step 4: Gemini labeling + directory fallback
 │   │   ├── complexityScoring.ts  # Step 5: LOC, deps, cyclomatic via TS compiler API
-│   │   ├── sustainability.ts     # Step 6: electricity/water/carbon formulas + tiers
+│   │   ├── sustainability.ts     # Step 6: electricity/carbon formulas + tiers + SCI score
 │   │   └── patternDetection.ts   # Steps 7+8: Claude pattern detection + suggestion generation
 │   ├── llm/
 │   │   ├── gemini.ts             # Gemini client wrapper (used for Step 4 only)
@@ -55,6 +55,16 @@ server/
 ## File path convention
 All filePath values in analysis.json are relative to workspacePath.
 Consumers must resolve them with path.join(workspacePath, filePath).
+
+## SCI scoring (Step 6)
+`sustainability.ts` reads optional config from `{workspacePath}/.canopy/config.json`:
+- `embodiedCarbonKg` (default 1000), `hardwareLifespanYears` (default 4)
+- `monthlyRequests` (default 100,000), `functionalUnit`, `functionalUnitLabel`
+
+SCI formula: `((E × I) + M) per R` where I = 436 gCO2/kWh (IEA global average), R = per 1000 API requests by default.
+Each feature's `sustainability.sci` block includes `score`, `unit`, `components` (E_per_R, I, M_per_R), and `functionalUnit`.
+`totals.sci` holds `averageScore`, `highestFeature`, and `unit`.
+`POST /mark-applied` reduces `sci.score` and `sci.components.E_per_R` by the same `estimatedSavingsPercent` and updates `totals.sci.averageScore`.
 
 ## Key constraints
 - workspacePath always comes from POST /analyze request body, never from process.argv

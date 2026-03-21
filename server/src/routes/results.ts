@@ -101,16 +101,22 @@ export function createResultsRouter(): Router {
 
     const savingsPercent = suggestion.estimatedSavingsPercent / 100;
     const savingsElectricity = feature.sustainability.electricityKwh * savingsPercent;
-    const savingsWater = feature.sustainability.waterLiters * savingsPercent;
     const savingsCarbon = feature.sustainability.carbonKgCo2e * savingsPercent;
 
     feature.sustainability.electricityKwh -= savingsElectricity;
-    feature.sustainability.waterLiters -= savingsWater;
     feature.sustainability.carbonKgCo2e -= savingsCarbon;
 
     analysis.totals.electricityKwh -= savingsElectricity;
-    analysis.totals.waterLiters -= savingsWater;
     analysis.totals.carbonKgCo2e -= savingsCarbon;
+
+    // savingsPercent is already a decimal (e.g. 0.61), so reduction = 1 - 0.61 = 0.39
+    const reduction = 1 - savingsPercent;
+    feature.sustainability.sci.score *= reduction;
+    feature.sustainability.sci.components.E_per_R *= reduction;
+    // I and M_per_R remain unchanged — only E changes when code efficiency improves
+
+    const sciScores = analysis.features.map((f) => f.sustainability.sci.score);
+    analysis.totals.sci.averageScore = sciScores.reduce((a, b) => a + b, 0) / sciScores.length;
 
     analysis.history.push({
       appliedAt: new Date().toISOString(),
@@ -119,7 +125,6 @@ export function createResultsRouter(): Router {
       suggestionId,
       patternType: suggestion.patternType,
       savingsElectricityKwh: savingsElectricity,
-      savingsWaterLiters: savingsWater,
       savingsCarbonKgCo2e: savingsCarbon,
     });
 

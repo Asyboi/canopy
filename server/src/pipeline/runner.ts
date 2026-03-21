@@ -41,7 +41,7 @@ export async function runPipeline(
   scoreComplexity(features, depGraph, workspacePath);
 
   // Step 6 — Sustainability estimates
-  calculateSustainability(features);
+  calculateSustainability(features, workspacePath);
 
   // Step 7 — Pattern detection
   emitProgress(workspacePath, 6, 'Detecting inefficiency patterns...', 80);
@@ -53,20 +53,30 @@ export async function runPipeline(
   // Build totals
   const totals = {
     electricityKwh: 0,
-    waterLiters: 0,
     carbonKgCo2e: 0,
   };
   for (const feature of features) {
     totals.electricityKwh += feature.sustainability.electricityKwh;
-    totals.waterLiters += feature.sustainability.waterLiters;
     totals.carbonKgCo2e += feature.sustainability.carbonKgCo2e;
   }
+
+  const sciTotals = features.length > 0
+    ? (() => {
+        const sciScores = features.map((f) => f.sustainability.sci.score);
+        const averageScore = sciScores.reduce((a, b) => a + b, 0) / sciScores.length;
+        const highestFeature = features.reduce((a, b) =>
+          a.sustainability.sci.score >= b.sustainability.sci.score ? a : b
+        ).name;
+        const unit = features[0].sustainability.sci.unit;
+        return { averageScore, highestFeature, unit };
+      })()
+    : { averageScore: 0, highestFeature: '', unit: 'per 1000 API requests' };
 
   return {
     generatedAt: new Date().toISOString(),
     workspacePath,
     features,
-    totals,
+    totals: { ...totals, sci: sciTotals },
     history: [],
   };
 }
