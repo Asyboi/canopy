@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-canopy-bg text-canopy-text font-mono;
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #2a3828 #111811;
+  }
+
+  *::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: #111811;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: #2a3828;
+    border-radius: 3px;
+  }
+}

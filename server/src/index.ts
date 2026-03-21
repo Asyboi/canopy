@@ -27,7 +27,7 @@ function cleanup(): void {
 }
 
 async function main(): Promise<void> {
-  const port = await getPort();
+  const port = process.env.PORT ? parseInt(process.env.PORT) : await getPort();
   const app = createApp();
 
   app.listen(port, () => {
