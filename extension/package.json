@@ -1,0 +1,63 @@
+{
+  "name": "canopy",
+  "displayName": "Canopy",
+  "description": "Sustainability analysis for your codebase",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "activationEvents": [
+    "workspaceContains:**/*.ts",
+    "workspaceContains:**/*.js"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "canopy",
+          "title": "Canopy",
+          "icon": "assets/canopy-icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "canopy": [
+        {
+          "id": "canopy.features",
+          "name": "Features"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "canopy.openGraph",
+        "title": "Canopy: Open Graph"
+      },
+      {
+        "command": "canopy.reanalyze",
+        "title": "Canopy: Re-analyze Workspace"
+      },
+      {
+        "command": "canopy.openDashboard",
+        "title": "Canopy: Open Web Dashboard"
+      }
+    ]
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "watch": "tsc -watch -p tsconfig.json",
+    "package": "vsce package"
+  },
+  "dependencies": {
+    "d3": "^7.9.0",
+    "eventsource": "^2.0.2"
+  },
+  "devDependencies": {
+    "@types/d3": "^7.4.0",
+    "@types/eventsource": "^1.1.15",
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.0.0"
+  }
+}

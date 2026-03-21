@@ -70,3 +70,55 @@ Each feature's `sustainability.sci` block includes `score`, `unit`, `components`
 - workspacePath always comes from POST /analyze request body, never from process.argv
 - Concurrency: POST /analyze returns 409 if analysis already running for that workspace
 - SSE: buffer events per workspace and replay to late-connecting clients
+
+---
+
+# Canopy — VS Code Extension
+
+## What this is
+VS Code extension that spawns the backend server, shows analysis results in a sidebar,
+renders a D3 force graph with ghost suggestion nodes, and provides a diff preview panel
+for applying or dismissing green code suggestions.
+
+## File structure
+extension/
+├── package.json               # Extension manifest + dependencies
+├── tsconfig.json
+├── assets/
+│   └── canopy-icon.svg        # Activity bar icon
+├── src/
+│   ├── extension.ts           # Entry point: activate() / deactivate()
+│   ├── server.ts              # Server lifecycle: spawn, port discovery, health check
+│   ├── api.ts                 # All HTTP calls to the backend
+│   ├── types.ts               # Shared TypeScript interfaces (copied from server)
+│   ├── sidebar.ts             # TreeDataProvider for feature list
+│   ├── graphPanel.ts          # WebviewPanel wrapper for D3 graph
+│   └── diffPanel.ts           # WebviewPanel wrapper for diff preview
+└── webview/
+    ├── graph/
+    │   ├── graph.js           # D3 force graph logic (plain JS, runs in webview)
+    │   └── styles.css
+    └── diff/
+        ├── diff.js            # Diff panel button handlers (plain JS, runs in webview)
+        └── styles.css
+
+## Activation flow
+1. Check workspace is open
+2. Start server via ensureServerRunning() — spawns node dist/index.js in server/ dir
+3. Register sidebar TreeDataProvider for canopy.features view
+4. Register commands: canopy.openGraph, canopy.reanalyze, canopy.openDashboard
+5. Run initial analysis with SSE progress tracking
+6. Watch file saves with 30s debounce for "outdated" nudge
+
+## Commands
+- canopy.openGraph — opens D3 graph in beside panel
+- canopy.reanalyze — re-runs full analysis pipeline
+- canopy.openDashboard — opens web dashboard in browser
+
+## Key architectural decisions
+- Webview scripts are plain JS (no separate TS compilation for webviews)
+- D3 loaded from node_modules via asWebviewUri, never CDN
+- EventSource polyfill (eventsource npm package) used for SSE in Node.js extension host
+- After applying/dismissing suggestions: fetch updated results, refresh sidebar + graph — no full re-analysis
+- Server CWD must be server/ dir so port file lands at server/.canopy/server.port
+- CSP nonce required on all webview script tags
