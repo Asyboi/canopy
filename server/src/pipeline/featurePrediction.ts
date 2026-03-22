@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import Anthropic from '@anthropic-ai/sdk';
 import { FeaturePrediction, SustainabilityPrediction, AnalysisResult } from '../types';
 import { retry } from '../utils/retry';
 
@@ -89,9 +89,8 @@ function buildFeaturesContext(workspacePath: string): string {
   }
 }
 
-async function callGemini(description: string, existingFeaturesContext: string): Promise<string> {
-  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+async function callClaude(description: string, existingFeaturesContext: string): Promise<string> {
+  const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 
   const prompt = `You are a software sustainability analyst. A developer wants to build a new feature.
 Analyze their description and respond with a JSON object ONLY — no markdown, no backticks, no explanation.
@@ -120,8 +119,12 @@ Rules:
 - Return ONLY the JSON object. No markdown fences. No explanation before or after.`;
 
   const result = await retry(async () => {
-    const response = await model.generateContent(prompt);
-    return response.response.text();
+    const message = await anthropic.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 1024,
+      messages: [{ role: 'user', content: prompt }],
+    });
+    return (message.content[0] as { type: 'text'; text: string }).text.trim();
   });
 
   return result;
@@ -140,10 +143,10 @@ export async function predictFeature(
 
   let raw: string;
   try {
-    raw = await callGemini(description, existingFeaturesContext);
+    raw = await callClaude(description, existingFeaturesContext);
   } catch (err) {
-    console.error('[predict] Gemini call failed:', err);
-    throw new Error('GEMINI_UNAVAILABLE');
+    console.error('[predict] Claude call failed:', err);
+    throw new Error('CLAUDE_UNAVAILABLE');
   }
 
   let parsed: Record<string, unknown>;
@@ -153,9 +156,9 @@ export async function predictFeature(
     // Retry once on parse failure
     let raw2: string;
     try {
-      raw2 = await callGemini(description, existingFeaturesContext);
+      raw2 = await callClaude(description, existingFeaturesContext);
     } catch {
-      throw new Error('GEMINI_UNAVAILABLE');
+      throw new Error('CLAUDE_UNAVAILABLE');
     }
     parsed = parseGeminiResponse(raw2); // throws if still malformed → 500
   }
