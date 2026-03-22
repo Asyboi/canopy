@@ -1,0 +1,274 @@
+{
+  "generatedAt": "2026-03-22T01:49:50.239Z",
+  "workspacePath": "/Users/ethanbubphamala/canopy/extension",
+  "features": [
+    {
+      "id": "feature_0b809555ca18",
+      "name": "Out",
+      "files": [
+        "out/api.js",
+        "out/dashboardPanel.js",
+        "out/diffPanel.js",
+        "out/extension.js",
+        "out/server.js",
+        "out/sidebar.js"
+      ],
+      "metrics": {
+        "loc": 805,
+        "dependencyCount": 0,
+        "cyclomaticComplexity": 158,
+        "complexityScore": 0.6817969661610268
+      },
+      "sustainability": {
+        "electricityKwh": 6.8179696616102685,
+        "carbonKgCo2e": 1.5885869311551926,
+        "isEstimated": true,
+        "infrastructureTag": null,
+        "sci": {
+          "score": 252.09315068493152,
+          "unit": "per 1000 API requests",
+          "components": {
+            "E_per_R": 0.10000000000000002,
+            "I": 436,
+            "M_per_R": 208.49315068493152
+          },
+          "functionalUnit": "per_1000_requests"
+        }
+      },
+      "sustainabilityTier": "high",
+      "suggestions": [
+        {
+          "id": "suggestion_29e9c1542f6f",
+          "status": "suggested",
+          "patternType": "POLLING",
+          "location": "pollForPortFile function in out/server.js",
+          "explanation": "The function repeatedly polls the filesystem every 500ms using setTimeout recursion for up to 15 seconds, which is wasteful when fs.watch could react immediately when the port file is created.",
+          "estimatedSavingsPercent": 40,
+          "currentCode": "async function pollForPortFile(portFilePath, timeoutMs, intervalMs) {\n    const start = Date.now();\n    return new Promise((resolve, reject) => {\n        const check = () => {\n            if (fs.existsSync(portFilePath)) {\n                const port = fs.readFileSync(portFilePath, 'utf-8').trim();\n                resolve(`http://localhost:${port}`);\n                return;\n            }\n            if (Date.now() - start > timeoutMs) {\n                reject(new Error('Server failed to start within 15 seconds'));\n                return;\n            }\n            setTimeout(check, intervalMs);\n        };\n        check();\n    });\n}",
+          "suggestedFileChanges": [
+            {
+              "filePath": "out/server.js",
+              "newContent": "\"use strict\";\nvar __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {\n    if (k2 === undefined) k2 = k;\n    var desc = Object.getOwnPropertyDescriptor(m, k);\n    if (!desc || (\"get\" in desc ? !m.__esModule : desc.writable || desc.configurable)) {\n      desc = { enumerable: true, get: function() { return m[k]; } };\n    }\n    Object.defineProperty(o, k2, desc);\n}) : (function(o, m, k, k2) {\n    if (k2 === undefined) k2 = k;\n    o[k2] = m[k];\n}));\nvar __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {\n    Object.defineProperty(o, \"default\", { enumerable: true, value: v });\n}) : function(o, v) {\n    o[\"default\"] = v;\n});\nvar __importStar = (this && this.__importStar) || (function () {\n    var ownKeys = function(o) {\n        ownKeys = Object.getOwnPropertyNames || function (o) {\n            var ar = [];\n            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;\n            return ar;\n        };\n        return ownKeys(o);\n    };\n    return function (mod) {\n        if (mod && mod.__esModule) return mod;\n        var result = {};\n        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== \"default\") __createBinding(result, mod, k[i]);\n        __setModuleDefault(result, mod);\n        return result;\n    };\n})();\nObject.defineProperty(exports, \"__esModule\", { value: true });\nexports.ensureServerRunning = ensureServerRunning;\nexports.getBaseUrl = getBaseUrl;\nexports.stopServer = stopServer;\nconst vscode = __importStar(require(\"vscode\"));\nconst path = __importStar(require(\"path\"));\nconst fs = __importStar(require(\"fs\"));\nconst child_process_1 = require(\"child_process\");\nlet serverProcess;\nlet outputChannel;\nasync function ensureServerRunning(context) {\n    const serverDir = path.join(context.extensionPath, '..', 'server');\n    const portFilePath = path.join(serverDir, '.canopy', 'server.port');\n    // If port file exists, check if server is actually reachable\n    if (fs.existsSync(portFilePath)) {\n        const port = fs.readFileSync(portFilePath, 'utf-8').trim();\n        const baseUrl = `http://localhost:${port}`;\n        try {\n            const res = await fetch(`${baseUrl}/results?workspacePath=/healthcheck`, { signal: AbortSignal.timeout(2000) });\n            // Server is running (404 is fine — means server is up but no results yet)\n            if (res.status === 404 || res.ok) {\n                return baseUrl;\n            }\n        }\n        catch {\n            // Server not reachable — delete stale port file and respawn\n            fs.unlinkSync(portFilePath);\n        }\n    }\n    // Ensure server is built\n    const serverEntry = path.join(serverDir, 'dist', 'index.js');\n    if (!fs.existsSync(serverEntry)) {\n        throw new Error('Server not built. Run `npm run build` in the server/ directory first.');\n    }\n    // Create output channel for server logs\n    if (!outputChannel) {\n        outputChannel = vscode.window.createOutputChannel('Canopy Server');\n    }\n    // Spawn server\n    serverProcess = (0, child_process_1.spawn)('node', ['dist/index.js'], {\n        cwd: serverDir,\n        detached: false,\n        stdio: 'pipe',\n        env: { ...process.env }\n    });\n    serverProcess.stdout?.on('data', (data) => {\n        outputChannel?.appendLine(data.toString().trim());\n    });\n    serverProcess.stderr?.on('data', (data) => {\n        outputChannel?.appendLine(`[stderr] ${data.toString().trim()}`);\n    });\n    serverProcess.on('exit', (code) => {\n        if (code !== null && code !== 0) {\n            vscode.window.showErrorMessage(`Canopy server exited with code ${code}. Check Output > Canopy Server for details.`);\n        }\n        serverProcess = undefined;\n    });\n    // Watch for port file using fs.watch instead of polling\n    const baseUrl = await watchForPortFile(portFilePath, 15000);\n    return baseUrl;\n}\nasync function getBaseUrl(context) {\n    const serverDir = path.join(context.extensionPath, '..', 'server');\n    const portFilePath = path.join(serverDir, '.canopy', 'server.port');\n    if (!fs.existsSync(portFilePath)) {\n        throw new Error('Server port file not found. Is the server running?');\n    }\n    const port = fs.readFileSync(portFilePath, 'utf-8').trim();\n    return `http://localhost:${port}`;\n}\nfunction stopServer() {\n    if (serverProcess) {\n        serverProcess.kill('SIGTERM');\n        serverProcess = undefined;\n    }\n}\n// More efficient than polling: uses fs.watch to receive an OS-level inotify/kqueue/FSEvents\n// notification the instant the port file is created, eliminating repeated interval-based\n// disk reads and CPU wake-ups that waste energy between checks.\nasync function watchForPortFile(portFilePath, timeoutMs) {\n    // Resolve immediately if the file already exists before the watcher is set up\n    if (fs.existsSync(portFilePath)) {\n        const port = fs.readFileSync(portFilePath, 'utf-8').trim();\n        return `http://localhost:${port}`;\n    }\n\n    return new Promise((resolve, reject) => {\n        let watcher;\n        let timer;\n\n        const cleanup = () => {\n            watcher?.close();\n            clearTimeout(timer);\n        };\n\n        const onFileReady = () => {\n            try {\n                const port = fs.readFileSync(portFilePath, 'utf-8').trim();\n                if (port) {\n                    cleanup();\n                    resolve(`http://localhost:${port}`);\n                }\n            } catch {\n                // File may have been detected before it was fully flushed; ignore and\n                // wait for the next watch event to retry.\n            }\n        };\n\n        // Watch the parent directory because the port file does not exist yet and\n        // fs.watch requires the target path to already be present on some platforms.\n        const watchDir = path.dirname(portFilePath);\n\n        // Ensure the .canopy directory exists so fs.watch has a valid target\n        fs.mkdirSync(watchDir, { recursive: true });\n\n        watcher = fs.watch(watchDir, (eventType, filename) => {\n            if (filename === path.basename(portFilePath)) {\n                onFileReady();\n            }\n        });\n\n        watcher.on('error', (err) => {\n            cleanup();\n            reject(err);\n        });\n\n        timer = setTimeout(() => {\n            cleanup();\n            reject(new Error('Server failed to start within 15 seconds'));\n        }, timeoutMs);\n    });\n}\n//# sourceMappingURL=server.js.map"
+            }
+          ]
+        },
+        {
+          "id": "suggestion_581423e52bc8",
+          "status": "suggested",
+          "patternType": "SYNC_BLOCKING",
+          "location": "ensureServerRunning and pollForPortFile functions in out/server.js",
+          "explanation": "Multiple synchronous fs calls (fs.readFileSync, fs.existsSync, fs.unlinkSync) are used throughout the server startup path, blocking the Node.js event loop while performing I/O operations that have async equivalents.",
+          "estimatedSavingsPercent": 25,
+          "currentCode": "const port = fs.readFileSync(portFilePath, 'utf-8').trim();\nconst baseUrl = `http://localhost:${port}`;\ntry {\n    const res = await fetch(`${baseUrl}/results?workspacePath=/healthcheck`, ...);\n    if (res.status === 404 || res.ok) {\n        return baseUrl;\n    }\n} catch {\n    fs.unlinkSync(portFilePath);\n}\n// ...\nif (fs.existsSync(portFilePath)) {\n    const port = fs.readFileSync(portFilePath, 'utf-8').trim();\n    resolve(`http://localhost:${port}`);\n    return;\n}",
+          "suggestedFileChanges": [
+            {
+              "filePath": "out/server.js",
+              "newContent": "\"use strict\";\nvar __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {\n    if (k2 === undefined) k2 = k;\n    var desc = Object.getOwnPropertyDescriptor(m, k);\n    if (!desc || (\"get\" in desc ? !m.__esModule : desc.writable || desc.configurable)) {\n      desc = { enumerable: true, get: function() { return m[k]; } };\n    }\n    Object.defineProperty(o, k2, desc);\n}) : (function(o, m, k, k2) {\n    if (k2 === undefined) k2 = k;\n    o[k2] = m[k];\n}));\nvar __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {\n    Object.defineProperty(o, \"default\", { enumerable: true, value: v });\n}) : function(o, v) {\n    o[\"default\"] = v;\n});\nvar __importStar = (this && this.__importStar) || (function () {\n    var ownKeys = function(o) {\n        ownKeys = Object.getOwnPropertyNames || function (o) {\n            var ar = [];\n            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;\n            return ar;\n        };\n        return ownKeys(o);\n    };\n    return function (mod) {\n        if (mod && mod.__esModule) return mod;\n        var result = {};\n        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== \"default\") __createBinding(result, mod, k[i]);\n        __setModuleDefault(result, mod);\n        return result;\n    };\n})();\nObject.defineProperty(exports, \"__esModule\", { value: true });\nexports.ensureServerRunning = ensureServerRunning;\nexports.getBaseUrl = getBaseUrl;\nexports.stopServer = stopServer;\nconst vscode = __importStar(require(\"vscode\"));\nconst path = __importStar(require(\"path\"));\nconst fs = __importStar(require(\"fs\"));\n// Use fs.promises for all async file operations to avoid blocking the Node.js\n// event loop. Sync variants (readFileSync, existsSync, unlinkSync) hold the\n// thread until the OS returns, starving all other async work during that time.\nconst fsp = fs.promises;\nconst child_process_1 = require(\"child_process\");\nlet serverProcess;\nlet outputChannel;\nasync function ensureServerRunning(context) {\n    const serverDir = path.join(context.extensionPath, '..', 'server');\n    const portFilePath = path.join(serverDir, '.canopy', 'server.port');\n    // If port file exists, check if server is actually reachable\n    const portFileExists = await fileExists(portFilePath);\n    if (portFileExists) {\n        const port = (await fsp.readFile(portFilePath, 'utf-8')).trim();\n        const baseUrl = `http://localhost:${port}`;\n        try {\n            const res = await fetch(`${baseUrl}/results?workspacePath=/healthcheck`, { signal: AbortSignal.timeout(2000) });\n            // Server is running (404 is fine — means server is up but no results yet)\n            if (res.status === 404 || res.ok) {\n                return baseUrl;\n            }\n        }\n        catch {\n            // Server not reachable — delete stale port file and respawn\n            await fsp.unlink(portFilePath);\n        }\n    }\n    // Ensure server is built\n    const serverEntry = path.join(serverDir, 'dist', 'index.js');\n    if (!await fileExists(serverEntry)) {\n        throw new Error('Server not built. Run `npm run build` in the server/ directory first.');\n    }\n    // Create output channel for server logs\n    if (!outputChannel) {\n        outputChannel = vscode.window.createOutputChannel('Canopy Server');\n    }\n    // Spawn server\n    serverProcess = (0, child_process_1.spawn)('node', ['dist/index.js'], {\n        cwd: serverDir,\n        detached: false,\n        stdio: 'pipe',\n        env: { ...process.env }\n    });\n    serverProcess.stdout?.on('data', (data) => {\n        outputChannel?.appendLine(data.toString().trim());\n    });\n    serverProcess.stderr?.on('data', (data) => {\n        outputChannel?.appendLine(`[stderr] ${data.toString().trim()}`);\n    });\n    serverProcess.on('exit', (code) => {\n        if (code !== null && code !== 0) {\n            vscode.window.showErrorMessage(`Canopy server exited with code ${code}. Check Output > Canopy Server for details.`);\n        }\n        serverProcess = undefined;\n    });\n    // Poll for port file\n    const baseUrl = await pollForPortFile(portFilePath, 15000, 500);\n    return baseUrl;\n}\nasync function getBaseUrl(context) {\n    const serverDir = path.join(context.extensionPath, '..', 'server');\n    const portFilePath = path.join(serverDir, '.canopy', 'server.port');\n    if (!await fileExists(portFilePath)) {\n        throw new Error('Server port file not found. Is the server running?');\n    }\n    const port = (await fsp.readFile(portFilePath, 'utf-8')).trim();\n    return `http://localhost:${port}`;\n}\nfunction stopServer() {\n    if (serverProcess) {\n        serverProcess.kill('SIGTERM');\n        serverProcess = undefined;\n    }\n}\n/**\n * Non-blocking existence check: attempts to access the file and treats\n * ENOENT as a clean \"not found\" rather than throwing. This replaces\n * fs.existsSync which blocks the event loop for the duration of the syscall.\n */\nasync function fileExists(filePath) {\n    try {\n        await fsp.access(filePath);\n        return true;\n    }\n    catch {\n        return false;\n    }\n}\nasync function pollForPortFile(portFilePath, timeoutMs, intervalMs) {\n    const start = Date.now();\n    return new Promise((resolve, reject) => {\n        const check = async () => {\n            // Use async file operations inside the polling loop so the event loop\n            // remains free to process other callbacks between each interval tick.\n            if (await fileExists(portFilePath)) {\n                const port = (await fsp.readFile(portFilePath, 'utf-8')).trim();\n                resolve(`http://localhost:${port}`);\n                return;\n            }\n            if (Date.now() - start > timeoutMs) {\n                reject(new Error('Server failed to start within 15 seconds'));\n                return;\n            }\n            setTimeout(check, intervalMs);\n        };\n        check();\n    });\n}\n//# sourceMappingURL=server.js.map"
+            }
+          ]
+        },
+        {
+          "id": "suggestion_b5ca67bd3ce9",
+          "status": "suggested",
+          "patternType": "POLLING",
+          "location": "onDidSaveTextDocument handler / debounceTimer in activate function in extension.js",
+          "explanation": "A nested setTimeout inside another setTimeout creates a timer-based polling-like pattern where a status bar item is shown after 30 seconds and then disposed after another 30 seconds, creating unnecessary timer overhead and a poor UX delay instead of reacting promptly.",
+          "estimatedSavingsPercent": 15,
+          "currentCode": "context.subscriptions.push(vscode.workspace.onDidSaveTextDocument(() => {\n    clearTimeout(debounceTimer);\n    debounceTimer = setTimeout(() => {\n        const item = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);\n        item.text = '$(sync) Canopy: Analysis outdated — click to refresh';\n        item.command = 'canopy.reanalyze';\n        item.show();\n        setTimeout(() => item.dispose(), 30000);\n    }, 30000);\n}));",
+          "suggestedFileChanges": [
+            {
+              "filePath": "out/extension.js",
+              "newContent": "\"use strict\";\nvar __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {\n    if (k2 === undefined) k2 = k;\n    var desc = Object.getOwnPropertyDescriptor(m, k);\n    if (!desc || (\"get\" in desc ? !m.__esModule : desc.writable || desc.configurable)) {\n      desc = { enumerable: true, get: function() { return m[k]; } };\n    }\n    Object.defineProperty(o, k2, desc);\n}) : (function(o, m, k, k2) {\n    if (k2 === undefined) k2 = k;\n    o[k2] = m[k];\n}));\nvar __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {\n    Object.defineProperty(o, \"default\", { enumerable: true, value: v });\n}) : function(o, v) {\n    o[\"default\"] = v;\n});\nvar __importStar = (this && this.__importStar) || (function () {\n    var ownKeys = function(o) {\n        ownKeys = Object.getOwnPropertyNames || function (o) {\n            var ar = [];\n            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;\n            return ar;\n        };\n        return ownKeys(o);\n    };\n    return function (mod) {\n        if (mod && mod.__esModule) return mod;\n        var result = {};\n        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== \"default\") __createBinding(result, mod, k[i]);\n        __setModuleDefault(result, mod);\n        return result;\n    };\n})();\nObject.defineProperty(exports, \"__esModule\", { value: true });\nexports.activate = activate;\nexports.deactivate = deactivate;\nconst vscode = __importStar(require(\"vscode\"));\nconst server_1 = require(\"./server\");\nconst api_1 = require(\"./api\");\nconst sidebar_1 = require(\"./sidebar\");\nconst diffPanel_1 = require(\"./diffPanel\");\nconst dashboardPanel_1 = require(\"./dashboardPanel\");\nlet currentFeatures = [];\nlet currentResults = null;\nasync function activate(context) {\n    // 1. Guard: check workspace is open\n    const workspaceFolders = vscode.workspace.workspaceFolders;\n    if (!workspaceFolders || workspaceFolders.length === 0) {\n        vscode.window.showErrorMessage('Canopy requires an open workspace folder.');\n        return;\n    }\n    const workspacePath = workspaceFolders[0].uri.fsPath;\n    // 2. Start server\n    let baseUrl;\n    try {\n        baseUrl = await (0, server_1.ensureServerRunning)(context);\n    }\n    catch (err) {\n        vscode.window.showErrorMessage(`Canopy: ${err}`);\n        return;\n    }\n    // 3. Register sidebar\n    const sidebarProvider = new sidebar_1.CanopySidebarProvider();\n    (0, diffPanel_1.setSidebarRef)(sidebarProvider);\n    context.subscriptions.push(vscode.window.registerTreeDataProvider('canopy.features', sidebarProvider));\n    // 4. Status bar item\n    const sciStatusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);\n    sciStatusBar.command = 'canopy.openDashboard';\n    sciStatusBar.tooltip = 'Canopy: Average SCI score across all features — click to open dashboard';\n    context.subscriptions.push(sciStatusBar);\n    function updateStatusBar(features, totals) {\n        const avgSci = totals.sci.averageScore.toFixed(0);\n        const highCount = features.filter(f => f.sustainabilityTier === 'high').length;\n        sciStatusBar.text = highCount > 0\n            ? `🌿 SCI: ${avgSci} gCO2  ⚠️ ${highCount} high impact`\n            : `🌿 SCI: ${avgSci} gCO2  ✅ all clear`;\n        sciStatusBar.backgroundColor = highCount > 0\n            ? new vscode.ThemeColor('statusBarItem.warningBackground')\n            : undefined;\n        sciStatusBar.show();\n    }\n    (0, diffPanel_1.setUpdateStatusBarRef)(updateStatusBar);\n    // 5. Register commands\n    context.subscriptions.push(vscode.commands.registerCommand('canopy.openDiff', (featureId, suggestionId) => {\n        diffPanel_1.CanopyDiffPanel.createOrShow(context.extensionUri, baseUrl, workspacePath, featureId, suggestionId);\n    }), vscode.commands.registerCommand('canopy.showFeatureInfo', (featureId) => {\n        const feature = currentFeatures.find(f => f.id === featureId);\n        if (!feature) {\n            return;\n        }\n        vscode.window.showInformationMessage(`${feature.name} — ⚡ ${feature.sustainability.electricityKwh.toFixed(1)} kWh/month  ` +\n            `🌱 ${feature.sustainability.carbonKgCo2e.toFixed(2)} kg CO₂e/month  ` +\n            `SCI: ${feature.sustainability.sci.score.toFixed(1)} ${feature.sustainability.sci.unit}  ` +\n            `— No suggestions available.`);\n    }), vscode.commands.registerCommand('canopy.reanalyze', () => runAnalysis(baseUrl, workspacePath, sidebarProvider, updateStatusBar)), vscode.commands.registerCommand('canopy.openDashboard', () => {\n        dashboardPanel_1.CanopyDashboardPanel.createOrShow(context.extensionUri, currentResults, () => runAnalysis(baseUrl, workspacePath, sidebarProvider, updateStatusBar));\n    }));\n    // 6. Run initial analysis\n    await runAnalysis(baseUrl, workspacePath, sidebarProvider, updateStatusBar);\n    // 7. Watch for file saves — show a one-time prompt per save burst using a\n    //    single reusable status bar item instead of creating and destroying a new\n    //    DOM/UI element on every save event. The item is shown on the first save\n    //    after a quiet period and hidden after 30 s, eliminating the repeated\n    //    setTimeout-driven allocation cycle (create → show → dispose) that ran\n    //    even when no user action was taken, wasting CPU and memory each cycle.\n    let debounceTimer;\n    const outdatedItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);\n    outdatedItem.text = '$(sync) Canopy: Analysis outdated — click to refresh';\n    outdatedItem.command = 'canopy.reanalyze';\n    context.subscriptions.push(outdatedItem);\n\n    let hideTimer;\n    context.subscriptions.push(vscode.workspace.onDidSaveTextDocument(() => {\n        clearTimeout(debounceTimer);\n        debounceTimer = setTimeout(() => {\n            // Reveal the pre-allocated item and schedule its hide; no object\n            // allocation occurs here, keeping GC pressure near zero.\n            clearTimeout(hideTimer);\n            outdatedItem.show();\n            hideTimer = setTimeout(() => outdatedItem.hide(), 30000);\n        }, 30000);\n    }));\n}\nasync function runAnalysis(baseUrl, workspacePath, sidebar, updateStatusBar) {\n    sidebar.setAnalyzing();\n    dashboardPanel_1.CanopyDashboardPanel.setAnalyzingIfOpen();\n    const eventSource = (0, api_1.openAnalyzeStream)(baseUrl, workspacePath);\n    await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: '🌿 Canopy', cancellable: false }, async (progress) => {\n        return new Promise((resolve, reject) => {\n            eventSource.addEventListener('progress', (e) => {\n                const data = JSON.parse(e.data);\n                progress.report({ message: data.message, increment: data.percent / 7 });\n                sidebar.updateScanProgress(data.step, data.message, data.percent);\n            });\n            eventSource.addEventListener('complete', async () => {\n                eventSource.close();\n                try {\n                    const results = await (0, api_1.getResults)(baseUrl, workspacePath);\n                    currentFeatures = results.features;\n                    currentResults = results;\n                    sidebar.refresh(results.features);\n                    updateStatusBar(results.features, results.totals);\n                    dashboardPanel_1.CanopyDashboardPanel.postResultsIfOpen(results);\n                    resolve();\n                }\n                catch (err) {\n                    sidebar.setError('Failed to load results');\n                    reject(err);\n                }\n            });\n            eventSource.addEventListener('error', (e) => {\n                eventSource.close();\n                const msg = e.data ? JSON.parse(e.data).message : 'Unknown error';\n                sidebar.setError(msg);\n                reject(new Error(msg));\n            });\n            // Trigger analysis after SSE is listening.\n            // 409 means analysis is already running — SSE stream will still complete.\n            (0, api_1.triggerAnalysis)(baseUrl, workspacePath).catch(err => {\n                if (!String(err.message).includes('409')) {\n                    reject(err);\n                }\n            });\n        });\n    });\n}\nfunction deactivate() {\n    (0, server_1.stopServer)();\n}\n//# sourceMappingURL=extension.js.map"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "feature_494dd16c5363",
+      "name": "Out",
+      "files": [
+        "out/types.js"
+      ],
+      "metrics": {
+        "loc": 3,
+        "dependencyCount": 0,
+        "cyclomaticComplexity": 0,
+        "complexityScore": 0.0010501750291715287
+      },
+      "sustainability": {
+        "electricityKwh": 0.010501750291715286,
+        "carbonKgCo2e": 0.002446907817969662,
+        "isEstimated": true,
+        "infrastructureTag": null,
+        "sci": {
+          "score": 252.09315068493152,
+          "unit": "per 1000 API requests",
+          "components": {
+            "E_per_R": 0.09999999999999999,
+            "I": 436,
+            "M_per_R": 208.49315068493152
+          },
+          "functionalUnit": "per_1000_requests"
+        }
+      },
+      "sustainabilityTier": "low",
+      "suggestions": []
+    },
+    {
+      "id": "feature_49c94fca968f",
+      "name": "Api",
+      "files": [
+        "src/api.ts",
+        "src/types.ts",
+        "src/dashboardPanel.ts",
+        "src/diffPanel.ts",
+        "src/sidebar.ts",
+        "src/extension.ts",
+        "src/server.ts"
+      ],
+      "metrics": {
+        "loc": 857,
+        "dependencyCount": 0,
+        "cyclomaticComplexity": 48,
+        "complexityScore": 0.4215189873417722
+      },
+      "sustainability": {
+        "electricityKwh": 4.215189873417722,
+        "carbonKgCo2e": 0.9821392405063293,
+        "isEstimated": true,
+        "infrastructureTag": null,
+        "sci": {
+          "score": 252.0931506849315,
+          "unit": "per 1000 API requests",
+          "components": {
+            "E_per_R": 0.1,
+            "I": 436,
+            "M_per_R": 208.4931506849315
+          },
+          "functionalUnit": "per_1000_requests"
+        }
+      },
+      "sustainabilityTier": "medium",
+      "suggestions": [
+        {
+          "id": "suggestion_6109862f054b",
+          "status": "suggested",
+          "patternType": "POLLING",
+          "location": "pollForPortFile function in src/server.ts",
+          "explanation": "Repeatedly polling the filesystem every 500ms with setTimeout to check for a port file is wasteful; a fs.watch or chokidar watcher would react instantly when the file appears instead of burning CPU cycles on timed checks.",
+          "estimatedSavingsPercent": 30,
+          "currentCode": "async function pollForPortFile(portFilePath: string, timeoutMs: number, intervalMs: number): Promise<string> {\n  const start = Date.now();\n\n  return new Promise<string>((resolve, reject) => {\n    const check = () => {\n      if (fs.existsSync(portFilePath)) {\n        const port = fs.readFileSync(portFilePath, 'utf-8').trim();\n        resolve(`http://localhost:${port}`);\n        return;\n      }\n\n      if (Date.now() - start > timeoutMs) {\n        reject(new Error('Server failed to start within 15 seconds'));\n        return;\n      }\n\n      setTimeout(check, intervalMs);\n    };\n\n    check();\n  });\n}",
+          "suggestedFileChanges": [
+            {
+              "filePath": "src/server.ts",
+              "newContent": "import * as vscode from 'vscode';\nimport * as path from 'path';\nimport * as fs from 'fs';\nimport { ChildProcess, spawn } from 'child_process';\n\nlet serverProcess: ChildProcess | undefined;\nlet outputChannel: vscode.OutputChannel | undefined;\n\nexport async function ensureServerRunning(context: vscode.ExtensionContext): Promise<string> {\n  const serverDir = path.join(context.extensionPath, '..', 'server');\n  const portFilePath = path.join(serverDir, '.canopy', 'server.port');\n\n  // If port file exists, check if server is actually reachable\n  if (fs.existsSync(portFilePath)) {\n    const port = fs.readFileSync(portFilePath, 'utf-8').trim();\n    const baseUrl = `http://localhost:${port}`;\n    try {\n      const res = await fetch(`${baseUrl}/results?workspacePath=/healthcheck`, { signal: AbortSignal.timeout(2000) });\n      // Server is running (404 is fine — means server is up but no results yet)\n      if (res.status === 404 || res.ok) {\n        return baseUrl;\n      }\n    } catch {\n      // Server not reachable — delete stale port file and respawn\n      fs.unlinkSync(portFilePath);\n    }\n  }\n\n  // Ensure server is built\n  const serverEntry = path.join(serverDir, 'dist', 'index.js');\n  if (!fs.existsSync(serverEntry)) {\n    throw new Error('Server not built. Run `npm run build` in the server/ directory first.');\n  }\n\n  // Create output channel for server logs\n  if (!outputChannel) {\n    outputChannel = vscode.window.createOutputChannel('Canopy Server');\n  }\n\n  // Spawn server\n  serverProcess = spawn('node', ['dist/index.js'], {\n    cwd: serverDir,\n    detached: false,\n    stdio: 'pipe',\n    env: { ...process.env }\n  });\n\n  serverProcess.stdout?.on('data', (data: Buffer) => {\n    outputChannel?.appendLine(data.toString().trim());\n  });\n\n  serverProcess.stderr?.on('data', (data: Buffer) => {\n    outputChannel?.appendLine(`[stderr] ${data.toString().trim()}`);\n  });\n\n  serverProcess.on('exit', (code) => {\n    if (code !== null && code !== 0) {\n      vscode.window.showErrorMessage(`Canopy server exited with code ${code}. Check Output > Canopy Server for details.`);\n    }\n    serverProcess = undefined;\n  });\n\n  // Watch for port file using fs.watch instead of polling\n  const baseUrl = await watchForPortFile(portFilePath, 15000, serverProcess);\n  return baseUrl;\n}\n\nexport async function getBaseUrl(context: vscode.ExtensionContext): Promise<string> {\n  const serverDir = path.join(context.extensionPath, '..', 'server');\n  const portFilePath = path.join(serverDir, '.canopy', 'server.port');\n\n  if (!fs.existsSync(portFilePath)) {\n    throw new Error('Server port file not found. Is the server running?');\n  }\n\n  const port = fs.readFileSync(portFilePath, 'utf-8').trim();\n  return `http://localhost:${port}`;\n}\n\nexport function stopServer(): void {\n  if (serverProcess) {\n    serverProcess.kill('SIGTERM');\n    serverProcess = undefined;\n  }\n}\n\n// Uses fs.watch (kernel-level inotify/FSEvents/kqueue) instead of repeated polling\n// with setTimeout. This eliminates CPU wake-ups every 500 ms and lets the OS notify\n// the process exactly once when the port file is created, reducing energy usage\n// proportionally to (timeoutMs / intervalMs) avoided timer callbacks.\nasync function watchForPortFile(portFilePath: string, timeoutMs: number, proc: ChildProcess): Promise<string> {\n  // Resolve immediately if the file already exists before the watcher is set up\n  if (fs.existsSync(portFilePath)) {\n    const port = await fs.promises.readFile(portFilePath, 'utf-8');\n    return `http://localhost:${port.trim()}`;\n  }\n\n  return new Promise<string>((resolve, reject) => {\n    // Watch the parent directory because the file does not exist yet\n    const watchDir = path.dirname(portFilePath);\n    const fileName = path.basename(portFilePath);\n\n    // Ensure the directory exists before watching it\n    fs.mkdirSync(watchDir, { recursive: true });\n\n    let watcher: fs.FSWatcher | undefined;\n    let timer: ReturnType<typeof setTimeout> | undefined;\n\n    const cleanup = () => {\n      watcher?.close();\n      if (timer !== undefined) {\n        clearTimeout(timer);\n      }\n    };\n\n    const tryResolve = async () => {\n      try {\n        if (!fs.existsSync(portFilePath)) {\n          return;\n        }\n        const port = (await fs.promises.readFile(portFilePath, 'utf-8')).trim();\n        if (!port) {\n          // File exists but not yet fully written; wait for the next event\n          return;\n        }\n        cleanup();\n        resolve(`http://localhost:${port}`);\n      } catch {\n        // File may have been partially written; the next watch event will retry\n      }\n    };\n\n    try {\n      watcher = fs.watch(watchDir, async (event, changedFile) => {\n        if (changedFile === fileName && (event === 'rename' || event === 'change')) {\n          await tryResolve();\n        }\n      });\n    } catch (err) {\n      cleanup();\n      reject(new Error(`Unable to watch directory ${watchDir}: ${(err as Error).message}`));\n      return;\n    }\n\n    watcher.on('error', (err) => {\n      cleanup();\n      reject(new Error(`File watcher error: ${err.message}`));\n    });\n\n    // Abort if the spawned process exits before writing the port file\n    proc.on('exit', (code) => {\n      if (!fs.existsSync(portFilePath)) {\n        cleanup();\n        reject(new Error(`Server process exited (code ${code}) before writing port file`));\n      }\n    });\n\n    // Hard timeout as a safety net\n    timer = setTimeout(() => {\n      cleanup();\n      reject(new Error('Server failed to start within 15 seconds'));\n    }, timeoutMs);\n  });\n}"
+            }
+          ]
+        },
+        {
+          "id": "suggestion_1e22932f21fd",
+          "status": "suggested",
+          "patternType": "SYNC_BLOCKING",
+          "location": "ensureServerRunning and pollForPortFile in src/server.ts",
+          "explanation": "Using synchronous fs.existsSync and fs.readFileSync blocks the Node.js event loop on every poll iteration and during startup, preventing other async tasks from executing while disk I/O completes; these should be replaced with fs.promises.access and fs.promises.readFile.",
+          "estimatedSavingsPercent": 25,
+          "currentCode": "if (fs.existsSync(portFilePath)) {\n  const port = fs.readFileSync(portFilePath, 'utf-8').trim();\n  const baseUrl = `http://localhost:${port}`;\n  ...\n}\n...\nif (fs.existsSync(portFilePath)) {\n  const port = fs.readFileSync(portFilePath, 'utf-8').trim();\n  resolve(`http://localhost:${port}`);\n  return;\n}",
+          "suggestedFileChanges": [
+            {
+              "filePath": "src/api.ts",
+              "newContent": "import fs = require('fs');\nimport EventSource = require('eventsource');\nimport { AnalysisResult, Feature, FileChange } from './types';\n\nasync function apiRequest<T>(url: string, options?: RequestInit): Promise<T> {\n  const res = await fetch(url, options);\n  if (!res.ok) {\n    const body = await res.text();\n    throw new Error(`HTTP ${res.status}: ${body}`);\n  }\n  return res.json() as Promise<T>;\n}\n\n// Reads the port file asynchronously to avoid blocking the event loop,\n// allowing other tasks to proceed while I/O completes.\nasync function readPortUrl(portFilePath: string): Promise<string | null> {\n  try {\n    const port = (await fs.promises.readFile(portFilePath, 'utf-8')).trim();\n    return `http://localhost:${port}`;\n  } catch {\n    return null;\n  }\n}\n\nexport async function triggerAnalysis(baseUrl: string, workspacePath: string): Promise<void> {\n  await apiRequest(`${baseUrl}/analyze`, {\n    method: 'POST',\n    headers: { 'Content-Type': 'application/json' },\n    body: JSON.stringify({ workspacePath }),\n  });\n}\n\nexport async function getResults(baseUrl: string, workspacePath: string): Promise<AnalysisResult> {\n  return apiRequest<AnalysisResult>(\n    `${baseUrl}/results?workspacePath=${encodeURIComponent(workspacePath)}`\n  );\n}\n\nexport async function applySuggestion(\n  baseUrl: string,\n  workspacePath: string,\n  featureId: string,\n  suggestionId: string\n): Promise<{ files: FileChange[] }> {\n  return apiRequest(`${baseUrl}/apply-suggestion`, {\n    method: 'POST',\n    headers: { 'Content-Type': 'application/json' },\n    body: JSON.stringify({ workspacePath, featureId, suggestionId }),\n  });\n}\n\nexport async function markApplied(\n  baseUrl: string,\n  workspacePath: string,\n  featureId: string,\n  suggestionId: string\n): Promise<{ status: string; updatedFeature: Feature }> {\n  return apiRequest(`${baseUrl}/mark-applied`, {\n    method: 'POST',\n    headers: { 'Content-Type': 'application/json' },\n    body: JSON.stringify({ workspacePath, featureId, suggestionId }),\n  });\n}\n\nexport async function dismissSuggestion(\n  baseUrl: string,\n  workspacePath: string,\n  featureId: string,\n  suggestionId: string\n): Promise<void> {\n  await apiRequest(`${baseUrl}/dismiss-suggestion`, {\n    method: 'POST',\n    headers: { 'Content-Type': 'application/json' },\n    body: JSON.stringify({ workspacePath, featureId, suggestionId }),\n  });\n}\n\nexport function openAnalyzeStream(baseUrl: string, workspacePath: string): EventSource {\n  const url = `${baseUrl}/analyze-stream?workspacePath=${encodeURIComponent(workspacePath)}`;\n  return new EventSource(url);\n}\n\nexport { readPortUrl };"
+            }
+          ]
+        },
+        {
+          "id": "suggestion_d29831058b25",
+          "status": "suggested",
+          "patternType": "SYNC_BLOCKING",
+          "location": "getBaseUrl function in src/server.ts",
+          "explanation": "Calling fs.existsSync and fs.readFileSync inside an async function blocks the event loop unnecessarily, negating the benefits of the async signature and stalling VS Code's extension host thread during file reads.",
+          "estimatedSavingsPercent": 15,
+          "currentCode": "export async function getBaseUrl(context: vscode.ExtensionContext): Promise<string> {\n  const serverDir = path.join(context.extensionPath, '..', 'server');\n  const portFilePath = path.join(serverDir, '.canopy', 'server.port');\n\n  if (!fs.existsSync(portFilePath)) {\n    throw new Error('Server port file not found. Is the server running?');\n  }\n\n  const port = fs.readFileSync(portFilePath, 'utf-8').trim();\n  return `http://localhost:${port}`;\n}",
+          "suggestedFileChanges": [
+            {
+              "filePath": "src/server.ts",
+              "newContent": "import * as vscode from 'vscode';\nimport * as path from 'path';\nimport * as fs from 'fs';\nimport { ChildProcess, spawn } from 'child_process';\n\nlet serverProcess: ChildProcess | undefined;\nlet outputChannel: vscode.OutputChannel | undefined;\n\nexport async function ensureServerRunning(context: vscode.ExtensionContext): Promise<string> {\n  const serverDir = path.join(context.extensionPath, '..', 'server');\n  const portFilePath = path.join(serverDir, '.canopy', 'server.port');\n\n  // If port file exists, check if server is actually reachable\n  try {\n    // Use fs.promises.access instead of existsSync to avoid blocking the event loop\n    await fs.promises.access(portFilePath, fs.constants.F_OK);\n    const port = (await fs.promises.readFile(portFilePath, 'utf-8')).trim();\n    const baseUrl = `http://localhost:${port}`;\n    try {\n      const res = await fetch(`${baseUrl}/results?workspacePath=/healthcheck`, { signal: AbortSignal.timeout(2000) });\n      // Server is running (404 is fine — means server is up but no results yet)\n      if (res.status === 404 || res.ok) {\n        return baseUrl;\n      }\n    } catch {\n      // Server not reachable — delete stale port file and respawn\n      await fs.promises.unlink(portFilePath);\n    }\n  } catch {\n    // Port file does not exist, fall through to spawn\n  }\n\n  // Ensure server is built\n  const serverEntry = path.join(serverDir, 'dist', 'index.js');\n  try {\n    await fs.promises.access(serverEntry, fs.constants.F_OK);\n  } catch {\n    throw new Error('Server not built. Run `npm run build` in the server/ directory first.');\n  }\n\n  // Create output channel for server logs\n  if (!outputChannel) {\n    outputChannel = vscode.window.createOutputChannel('Canopy Server');\n  }\n\n  // Spawn server\n  serverProcess = spawn('node', ['dist/index.js'], {\n    cwd: serverDir,\n    detached: false,\n    stdio: 'pipe',\n    env: { ...process.env }\n  });\n\n  serverProcess.stdout?.on('data', (data: Buffer) => {\n    outputChannel?.appendLine(data.toString().trim());\n  });\n\n  serverProcess.stderr?.on('data', (data: Buffer) => {\n    outputChannel?.appendLine(`[stderr] ${data.toString().trim()}`);\n  });\n\n  serverProcess.on('exit', (code) => {\n    if (code !== null && code !== 0) {\n      vscode.window.showErrorMessage(`Canopy server exited with code ${code}. Check Output > Canopy Server for details.`);\n    }\n    serverProcess = undefined;\n  });\n\n  // Poll for port file\n  const baseUrl = await pollForPortFile(portFilePath, 15000, 500);\n  return baseUrl;\n}\n\nexport async function getBaseUrl(context: vscode.ExtensionContext): Promise<string> {\n  const serverDir = path.join(context.extensionPath, '..', 'server');\n  const portFilePath = path.join(serverDir, '.canopy', 'server.port');\n\n  // Use fs.promises.access and fs.promises.readFile instead of their synchronous counterparts\n  // (existsSync, readFileSync) to avoid blocking the Node.js event loop during I/O operations,\n  // allowing other async tasks to proceed while the file system is being read.\n  try {\n    await fs.promises.access(portFilePath, fs.constants.F_OK);\n  } catch {\n    throw new Error('Server port file not found. Is the server running?');\n  }\n\n  const port = (await fs.promises.readFile(portFilePath, 'utf-8')).trim();\n  return `http://localhost:${port}`;\n}\n\nexport function stopServer(): void {\n  if (serverProcess) {\n    serverProcess.kill('SIGTERM');\n    serverProcess = undefined;\n  }\n}\n\nasync function pollForPortFile(portFilePath: string, timeoutMs: number, intervalMs: number): Promise<string> {\n  const start = Date.now();\n\n  return new Promise<string>((resolve, reject) => {\n    const check = async () => {\n      try {\n        // Use fs.promises.access and fs.promises.readFile instead of their synchronous\n        // counterparts to avoid blocking the event loop during each polling interval.\n        await fs.promises.access(portFilePath, fs.constants.F_OK);\n        const port = (await fs.promises.readFile(portFilePath, 'utf-8')).trim();\n        resolve(`http://localhost:${port}`);\n      } catch {\n        if (Date.now() - start > timeoutMs) {\n          reject(new Error('Server failed to start within 15 seconds'));\n          return;\n        }\n\n        setTimeout(check, intervalMs);\n      }\n    };\n\n    check();\n  });\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "feature_adec75224acd",
+      "name": "Dashboard",
+      "files": [
+        "webview/dashboard/dashboard.js"
+      ],
+      "metrics": {
+        "loc": 269,
+        "dependencyCount": 0,
+        "cyclomaticComplexity": 11,
+        "complexityScore": 0.12201379554820317
+      },
+      "sustainability": {
+        "electricityKwh": 1.2201379554820317,
+        "carbonKgCo2e": 0.2842921436273134,
+        "isEstimated": true,
+        "infrastructureTag": null,
+        "sci": {
+          "score": 252.09315068493146,
+          "unit": "per 1000 API requests",
+          "components": {
+            "E_per_R": 0.09999999999999999,
+            "I": 436,
+            "M_per_R": 208.49315068493146
+          },
+          "functionalUnit": "per_1000_requests"
+        }
+      },
+      "sustainabilityTier": "low",
+      "suggestions": []
+    },
+    {
+      "id": "feature_ebd34be5fe91",
+      "name": "Diff",
+      "files": [
+        "webview/diff/diff.js"
+      ],
+      "metrics": {
+        "loc": 12,
+        "dependencyCount": 0,
+        "cyclomaticComplexity": 0,
+        "complexityScore": 0.004200700116686115
+      },
+      "sustainability": {
+        "electricityKwh": 0.042007001166861145,
+        "carbonKgCo2e": 0.009787631271878648,
+        "isEstimated": true,
+        "infrastructureTag": null,
+        "sci": {
+          "score": 252.09315068493152,
+          "unit": "per 1000 API requests",
+          "components": {
+            "E_per_R": 0.09999999999999999,
+            "I": 436,
+            "M_per_R": 208.49315068493152
+          },
+          "functionalUnit": "per_1000_requests"
+        }
+      },
+      "sustainabilityTier": "low",
+      "suggestions": []
+    }
+  ],
+  "totals": {
+    "electricityKwh": 12.305806241968599,
+    "carbonKgCo2e": 2.8672528543786835,
+    "sci": {
+      "averageScore": 252.09315068493152,
+      "highestFeature": "Out",
+      "unit": "per 1000 API requests"
+    }
+  },
+  "history": []
+}

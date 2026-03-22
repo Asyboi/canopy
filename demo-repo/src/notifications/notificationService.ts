@@ -1,5 +1,6 @@
 import { Pool } from 'pg';
 import axios from 'axios';
+import EventSource from 'eventsource';
 
 const notificationDb = new Pool({ connectionString: process.env.NOTIFICATION_DB_URL });
 const notificationApi = axios.create({ baseURL: process.env.NOTIFICATION_API_URL });
@@ -12,26 +13,34 @@ interface Notification {
   createdAt: Date;
 }
 
-let pollingInterval: ReturnType<typeof setInterval> | null = null;
+// SSE connection reference replaces the polling interval handle.
+// SSE is far more efficient than polling: the server pushes events only when
+// new notifications exist, eliminating hundreds of unnecessary HTTP round-trips
+// per hour and reducing CPU, bandwidth, and battery consumption on both client
+// and server.
+let sseConnection: EventSource | null = null;
 
-// POLLING PATTERN: Polls the API every 3 seconds for new notifications.
-// A WebSocket or SSE connection would be far more efficient.
 export function startNotificationPolling(userId: string): void {
-  pollingInterval = setInterval(async () => {
-    const response = await notificationApi.get(
-      `/api/notifications?userId=${userId}&unread=true`
-    );
-    const notifications: Notification[] = response.data;
-    for (const n of notifications) {
-      console.log(`Notification: ${n.message}`);
-    }
-  }, 3000);
+  // SSE PATTERN: Opens a single persistent HTTP connection; the server streams
+  // events only when new notifications are available, instead of the client
+  // hammering the API every 3 seconds regardless of whether anything changed.
+  const url = `${process.env.NOTIFICATION_API_URL}/api/notifications/stream?userId=${userId}&unread=true`;
+  sseConnection = new EventSource(url);
+
+  sseConnection.addEventListener('notification', (event: MessageEvent) => {
+    const notification: Notification = JSON.parse(event.data);
+    console.log(`Notification: ${notification.message}`);
+  });
+
+  sseConnection.addEventListener('error', (err: Event) => {
+    console.error('SSE connection error:', err);
+  });
 }
 
 export function stopNotificationPolling(): void {
-  if (pollingInterval) {
-    clearInterval(pollingInterval);
-    pollingInterval = null;
+  if (sseConnection) {
+    sseConnection.close();
+    sseConnection = null;
   }
 }
 

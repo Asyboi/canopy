@@ -17,24 +17,23 @@ interface ReportConfig {
   format: 'pdf' | 'csv' | 'json';
 }
 
-// SYNC_BLOCKING PATTERN: Uses synchronous fs methods in a request handler,
-// blocking the Node.js event loop on every call.
-// Should use fs.promises (async) instead.
-export function generateReport(reportId: string, config: ReportConfig): string {
-  // Blocks event loop reading template
-  const template = fs.readFileSync(
+// Uses fs.promises with async/await instead of synchronous fs methods, freeing
+// the Node.js event loop to handle other requests while I/O operations complete.
+export async function generateReport(reportId: string, config: ReportConfig): Promise<string> {
+  // Non-blocking async read: event loop remains available during disk I/O
+  const template = await fs.promises.readFile(
     path.join(__dirname, '../../templates', config.template),
     'utf-8'
   );
 
   const content = template.replace('{{reportId}}', reportId);
 
-  // Blocks event loop writing output
+  // Non-blocking async write: event loop remains available during disk I/O
   const outputPath = path.join(config.outputPath, `${reportId}.${config.format}`);
-  fs.writeFileSync(outputPath, content, 'utf-8');
+  await fs.promises.writeFile(outputPath, content, 'utf-8');
 
-  // Blocks event loop reading back to verify
-  return fs.readFileSync(outputPath, 'utf-8');
+  // Non-blocking async read: event loop remains available during disk I/O
+  return fs.promises.readFile(outputPath, 'utf-8');
 }
 
 export async function getReport(id: string): Promise<Report | null> {

@@ -56,7 +56,7 @@ export class CanopyDiffPanel {
 
     panel.webview.html = getDiffHtml(webview, nonce, scriptUri, styleUri, suggestion, savingsCarbon, savingsElec, savingsSci, feature.sustainability.sci.unit);
 
-    panel.webview.onDidReceiveMessage(async msg => {
+    panel.webview.onDidReceiveMessage(async (msg: any) => {
       if (msg.type === 'apply') {
         try {
           const { files } = await applySuggestion(baseUrl, workspacePath, featureId, suggestionId);

@@ -19,36 +19,46 @@ interface UserWithTeam extends User {
   teamMembers: User[];
 }
 
-// N+1 QUERY PATTERN: Fetches users then fires one DB query per user for their team.
-// Results in 1 + N*2 queries. Should use a batched JOIN instead.
+// BATCHED QUERY PATTERN: Replaces the previous 1 + N*2 query pattern with 3 total queries.
+// First fetches all users, then fetches all relevant teams and team members in single
+// batched queries using WHERE IN / ANY, and finally assembles the result in memory.
 export async function getUsersWithTeamInfo(userIds: string[]): Promise<UserWithTeam[]> {
   const result = await userDb.query(
     'SELECT * FROM users WHERE id = ANY($1)',
     [userIds]
   );
   const users: User[] = result.rows;
-  const usersWithTeams: UserWithTeam[] = [];
 
-  for (const user of users) {
-    // N+1: separate query per user for their team
-    const teamResult = await userDb.query(
-      'SELECT * FROM teams WHERE id = $1',
-      [user.teamId]
-    );
-    const team: Team = teamResult.rows[0];
+  // Collect unique team IDs to avoid redundant lookups
+  const teamIds = [...new Set(users.map((user) => user.teamId))];
 
-    // N+1: another separate query per user for team members
-    const membersResult = await userDb.query(
-      'SELECT * FROM users WHERE team_id = $1',
-      [user.teamId]
-    );
+  // Single batched query for all teams instead of one query per user
+  const teamsResult = await userDb.query(
+    'SELECT * FROM teams WHERE id = ANY($1)',
+    [teamIds]
+  );
+  const teamsById = new Map<string, Team>(
+    teamsResult.rows.map((team: Team) => [team.id, team])
+  );
 
-    usersWithTeams.push({
-      ...user,
-      teamName: team?.name || 'Unknown',
-      teamMembers: membersResult.rows,
-    });
+  // Single batched query for all team members instead of one query per user
+  const allMembersResult = await userDb.query(
+    'SELECT * FROM users WHERE team_id = ANY($1)',
+    [teamIds]
+  );
+  const membersByTeamId = new Map<string, User[]>();
+  for (const member of allMembersResult.rows as User[]) {
+    const existing = membersByTeamId.get(member.teamId) ?? [];
+    existing.push(member);
+    membersByTeamId.set(member.teamId, existing);
   }
+
+  // Assemble final result using the in-memory maps — no further DB calls needed
+  const usersWithTeams: UserWithTeam[] = users.map((user) => ({
+    ...user,
+    teamName: teamsById.get(user.teamId)?.name || 'Unknown',
+    teamMembers: membersByTeamId.get(user.teamId) ?? [],
+  }));
 
   return usersWithTeams;
 }

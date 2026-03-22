@@ -3,9 +3,11 @@ import { ensureServerRunning, stopServer } from './server';
 import { triggerAnalysis, getResults, openAnalyzeStream } from './api';
 import { CanopySidebarProvider } from './sidebar';
 import { CanopyDiffPanel, setSidebarRef, setUpdateStatusBarRef } from './diffPanel';
+import { CanopyDashboardPanel } from './dashboardPanel';
 import { Feature, AnalysisResult } from './types';
 
 let currentFeatures: Feature[] = [];
+let currentResults: AnalysisResult | null = null;
 
 export async function activate(context: vscode.ExtensionContext) {
   // 1. Guard: check workspace is open
@@ -26,10 +28,12 @@ export async function activate(context: vscode.ExtensionContext) {
   }
 
   // 3. Register sidebar
-  const sidebarProvider = new CanopySidebarProvider();
+  const sidebarProvider = new CanopySidebarProvider(context.extensionUri);
   setSidebarRef(sidebarProvider);
   context.subscriptions.push(
-    vscode.window.registerTreeDataProvider('canopy.features', sidebarProvider)
+    vscode.window.registerWebviewViewProvider('canopy.features', sidebarProvider, {
+      webviewOptions: { retainContextWhenHidden: true },
+    })
   );
 
   // 4. Status bar item
@@ -71,8 +75,11 @@ export async function activate(context: vscode.ExtensionContext) {
       runAnalysis(baseUrl, workspacePath, sidebarProvider, updateStatusBar)
     ),
     vscode.commands.registerCommand('canopy.openDashboard', () => {
-      const url = `${baseUrl}/dashboard?workspacePath=${encodeURIComponent(workspacePath)}`;
-      vscode.env.openExternal(vscode.Uri.parse(url));
+      CanopyDashboardPanel.createOrShow(
+        context.extensionUri,
+        currentResults,
+        () => runAnalysis(baseUrl, workspacePath, sidebarProvider, updateStatusBar)
+      );
     })
   );
 
@@ -102,6 +109,7 @@ async function runAnalysis(
   updateStatusBar: (features: Feature[], totals: AnalysisResult['totals']) => void
 ) {
   sidebar.setAnalyzing();
+  CanopyDashboardPanel.setAnalyzingIfOpen();
 
   const eventSource = openAnalyzeStream(baseUrl, workspacePath);
 
@@ -120,8 +128,10 @@ async function runAnalysis(
           try {
             const results = await getResults(baseUrl, workspacePath);
             currentFeatures = results.features;
+            currentResults = results;
             sidebar.refresh(results.features);
             updateStatusBar(results.features, results.totals);
+            CanopyDashboardPanel.postResultsIfOpen(results);
             resolve();
           } catch (err) {
             sidebar.setError('Failed to load results');
@@ -136,8 +146,11 @@ async function runAnalysis(
           reject(new Error(msg));
         });
 
-        // Trigger analysis after SSE is listening
-        triggerAnalysis(baseUrl, workspacePath).catch(reject);
+        // Trigger analysis after SSE is listening.
+        // 409 means analysis is already running — SSE stream will still complete.
+        triggerAnalysis(baseUrl, workspacePath).catch(err => {
+          if (!String(err.message).includes('409')) { reject(err); }
+        });
       });
     }
   );

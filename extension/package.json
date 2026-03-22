@@ -25,7 +25,8 @@
       "canopy": [
         {
           "id": "canopy.features",
-          "name": "Features"
+          "name": "Features",
+          "type": "webview"
         }
       ]
     },
