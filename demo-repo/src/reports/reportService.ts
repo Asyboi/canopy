@@ -21,7 +21,7 @@ interface ReportConfig {
 // the Node.js event loop to handle other requests while I/O is in progress.
 // This reduces CPU idle time and improves throughput under concurrent load.
 export async function generateReport(reportId: string, config: ReportConfig): Promise<string> {
-  // Non-blocking async read of template
+  // Non-blocking async read: event loop remains available during disk I/O
   const template = await fs.promises.readFile(
     path.join(__dirname, '../../templates', config.template),
     'utf-8'
@@ -29,11 +29,11 @@ export async function generateReport(reportId: string, config: ReportConfig): Pr
 
   const content = template.replace('{{reportId}}', reportId);
 
-  // Non-blocking async write of output
+  // Non-blocking async write: event loop remains available during disk I/O
   const outputPath = path.join(config.outputPath, `${reportId}.${config.format}`);
   await fs.promises.writeFile(outputPath, content, 'utf-8');
 
-  // Non-blocking async read back to verify
+  // Non-blocking async read: event loop remains available during disk I/O
   return fs.promises.readFile(outputPath, 'utf-8');
 }
 

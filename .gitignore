@@ -7,3 +7,4 @@ server/.canopy/
 # Extension build output
 extension/out/
 extension/node_modules/
+node_modules/

@@ -1,0 +1,387 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--vscode-font-family);
+  font-size: var(--vscode-font-size);
+  color: var(--vscode-editor-foreground);
+  background: var(--vscode-editor-background);
+  line-height: 1.5;
+}
+
+/* ── Layout ───────────────────────────────────────── */
+
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* ── Top bar ──────────────────────────────────────── */
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  background: var(--vscode-sideBar-background, var(--vscode-editor-background));
+  border-bottom: 1px solid var(--vscode-panel-border, rgba(255,255,255,0.1));
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.topbar-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--vscode-editor-foreground);
+}
+
+.topbar-meta {
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+}
+
+.topbar-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* ── Buttons ──────────────────────────────────────── */
+
+.btn {
+  padding: 5px 12px;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: inherit;
+  transition: opacity 0.15s;
+}
+
+.btn:hover {
+  opacity: 0.85;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--vscode-button-hoverBackground);
+  opacity: 1;
+}
+
+.btn-secondary {
+  background: var(--vscode-button-secondaryBackground, rgba(255,255,255,0.08));
+  color: var(--vscode-button-secondaryForeground, var(--vscode-editor-foreground));
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: var(--vscode-button-secondaryHoverBackground, rgba(255,255,255,0.14));
+  opacity: 1;
+}
+
+/* ── Main content ─────────────────────────────────── */
+
+.content {
+  padding: 20px;
+  max-width: 960px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* ── Summary cards ────────────────────────────────── */
+
+.summary-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.summary-card {
+  background: var(--vscode-sideBar-background, rgba(255,255,255,0.04));
+  border: 1px solid var(--vscode-panel-border, rgba(255,255,255,0.08));
+  border-radius: 6px;
+  padding: 14px 16px;
+}
+
+.summary-card-label {
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+}
+
+.summary-card-value {
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.summary-card-unit {
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+  margin-top: 2px;
+}
+
+.summary-card.accent-green .summary-card-value { color: var(--vscode-charts-green, #4ec9b0); }
+.summary-card.accent-yellow .summary-card-value { color: var(--vscode-charts-yellow, #d7ba7d); }
+.summary-card.accent-red .summary-card-value { color: var(--vscode-charts-red, #f14c4c); }
+.summary-card.accent-blue .summary-card-value { color: var(--vscode-charts-blue, #75beff); }
+
+/* ── Section headers ──────────────────────────────── */
+
+.section-header {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--vscode-descriptionForeground);
+  margin-bottom: 10px;
+}
+
+/* ── Feature list ─────────────────────────────────── */
+
+.feature-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 28px;
+}
+
+.feature-card {
+  background: var(--vscode-sideBar-background, rgba(255,255,255,0.04));
+  border: 1px solid var(--vscode-panel-border, rgba(255,255,255,0.08));
+  border-left: 3px solid transparent;
+  border-radius: 6px;
+  padding: 14px 16px;
+}
+
+.feature-card.tier-high   { border-left-color: var(--vscode-charts-red, #f14c4c); }
+.feature-card.tier-medium { border-left-color: var(--vscode-charts-yellow, #d7ba7d); }
+.feature-card.tier-low    { border-left-color: var(--vscode-charts-green, #4ec9b0); }
+
+.feature-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.feature-name {
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tier-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.tier-high   .tier-dot { background: var(--vscode-charts-red, #f14c4c); }
+.tier-medium .tier-dot { background: var(--vscode-charts-yellow, #d7ba7d); }
+.tier-low    .tier-dot { background: var(--vscode-charts-green, #4ec9b0); }
+
+.feature-metrics {
+  display: flex;
+  gap: 16px;
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+}
+
+.feature-metric span {
+  font-weight: 500;
+  color: var(--vscode-editor-foreground);
+}
+
+/* ── Suggestions inside feature card ─────────────── */
+
+.suggestions {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-top: 1px solid var(--vscode-panel-border, rgba(255,255,255,0.08));
+  padding-top: 10px;
+}
+
+.suggestion-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.suggestion-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.suggestion-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  background: var(--vscode-badge-background);
+  color: var(--vscode-badge-foreground);
+  flex-shrink: 0;
+  align-self: flex-start;
+  margin-bottom: 2px;
+}
+
+.suggestion-explanation {
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.suggestion-savings {
+  font-size: 10px;
+  color: var(--vscode-charts-green, #4ec9b0);
+}
+
+.suggestion-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.suggestion-status {
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+  font-style: italic;
+  align-self: center;
+}
+
+/* ── History table ────────────────────────────────── */
+
+.history-section {
+  margin-bottom: 24px;
+}
+
+.history-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.history-table th {
+  text-align: left;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--vscode-descriptionForeground);
+  border-bottom: 1px solid var(--vscode-panel-border, rgba(255,255,255,0.1));
+  white-space: nowrap;
+}
+
+.history-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--vscode-panel-border, rgba(255,255,255,0.05));
+  vertical-align: middle;
+}
+
+.history-table tr:last-child td {
+  border-bottom: none;
+}
+
+.history-table tr:hover td {
+  background: var(--vscode-list-hoverBackground, rgba(255,255,255,0.04));
+}
+
+.history-savings {
+  color: var(--vscode-charts-green, #4ec9b0);
+  font-size: 11px;
+}
+
+/* ── Empty / loading / analyzing states ───────────── */
+
+.loading-state,
+.analyzing-state,
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 60px 20px;
+  text-align: center;
+  color: var(--vscode-descriptionForeground);
+}
+
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--vscode-panel-border, rgba(255,255,255,0.15));
+  border-top-color: var(--vscode-button-background, #0e639c);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.analyzing-steps {
+  list-style: none;
+  text-align: left;
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.analyzing-steps li {
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.step-done { color: var(--vscode-charts-green, #4ec9b0); }
+.step-active { color: var(--vscode-editor-foreground); }
+.step-pending { color: var(--vscode-disabledForeground, rgba(255,255,255,0.3)); }
+
+/* ── Responsive ───────────────────────────────────── */
+
+@media (max-width: 640px) {
+  .summary-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 400px) {
+  .summary-row {
+    grid-template-columns: 1fr;
+  }
+}

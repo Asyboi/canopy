@@ -19,9 +19,9 @@ interface UserWithTeam extends User {
   teamMembers: User[];
 }
 
-// OPTIMIZED: Replaces 1 + N*2 queries with 3 total queries.
-// Fetches all users, then batches team and member lookups using WHERE IN / ANY,
-// eliminating per-user round trips to the database.
+// BATCHED QUERY PATTERN: Replaces the previous 1 + N*2 query pattern with 3 total queries.
+// First fetches all users, then fetches all relevant teams and team members in single
+// batched queries using WHERE IN / ANY, and finally assembles the result in memory.
 export async function getUsersWithTeamInfo(userIds: string[]): Promise<UserWithTeam[]> {
   const result = await userDb.query(
     'SELECT * FROM users WHERE id = ANY($1)',
@@ -33,9 +33,10 @@ export async function getUsersWithTeamInfo(userIds: string[]): Promise<UserWithT
     return [];
   }
 
+  // Collect unique team IDs to avoid redundant lookups
   const teamIds = [...new Set(users.map((user) => user.teamId))];
 
-  // Batch-fetch all relevant teams and members in one query each
+  // Batch-fetch all relevant teams and members in parallel — one query each
   const [teamsResult, membersResult] = await Promise.all([
     userDb.query(
       'SELECT * FROM teams WHERE id = ANY($1)',
@@ -58,6 +59,7 @@ export async function getUsersWithTeamInfo(userIds: string[]): Promise<UserWithT
     membersByTeamId.set(member.teamId, existing);
   }
 
+  // Assemble final result using the in-memory maps — no further DB calls needed
   const usersWithTeams: UserWithTeam[] = users.map((user) => ({
     ...user,
     teamName: teamsById.get(user.teamId)?.name || 'Unknown',

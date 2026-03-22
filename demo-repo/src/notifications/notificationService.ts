@@ -13,13 +13,17 @@ interface Notification {
   createdAt: Date;
 }
 
+// SSE connection reference replaces the polling interval handle.
+// SSE is far more efficient than polling: the server pushes events only when
+// new notifications exist, eliminating hundreds of unnecessary HTTP round-trips
+// per hour and reducing CPU, bandwidth, and battery consumption on both client
+// and server.
 let sseConnection: EventSource | null = null;
 
-// SSE PATTERN: The server pushes notifications to the client only when new ones arrive,
-// eliminating the constant HTTP requests of polling. This keeps a single long-lived
-// connection open instead of hammering the API every 3 seconds, dramatically reducing
-// CPU, network, and energy usage when notifications are infrequent.
 export function startNotificationPolling(userId: string): void {
+  // SSE PATTERN: Opens a single persistent HTTP connection; the server streams
+  // events only when new notifications are available, instead of the client
+  // hammering the API every 3 seconds regardless of whether anything changed.
   const url = `${process.env.NOTIFICATION_API_URL}/api/notifications/stream?userId=${userId}&unread=true`;
   sseConnection = new EventSource(url);
 
