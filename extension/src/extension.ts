@@ -28,7 +28,7 @@ export async function activate(context: vscode.ExtensionContext) {
   }
 
   // 3. Register sidebar
-  const sidebarProvider = new CanopySidebarProvider(context.extensionUri);
+  const sidebarProvider = new CanopySidebarProvider(context.extensionUri, workspacePath, baseUrl);
   setSidebarRef(sidebarProvider);
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider('canopy.features', sidebarProvider, {

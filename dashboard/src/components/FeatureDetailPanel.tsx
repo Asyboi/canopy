@@ -74,10 +74,6 @@ export default function FeatureDetailPanel({ feature, history }: Props) {
             <span className="text-canopy-muted">Carbon</span>
             <span className="font-mono text-canopy-secondary">~{sustainability.carbonKgCo2e.toFixed(5)} kgCO₂e</span>
           </div>
-          <div className="flex justify-between text-[10px]">
-            <span className="text-canopy-muted">Water</span>
-            <span className="font-mono text-canopy-secondary">~{sustainability.waterLiters.toFixed(4)} L</span>
-          </div>
         </div>
       </div>
 

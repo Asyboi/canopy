@@ -48,10 +48,6 @@ export default function StatCards({ totals, sciTotals: _sciTotals, features }: P
         <span className="text-canopy-muted text-[10px]">Carbon</span>
         <span className="text-canopy-secondary text-[10px] tabular-nums font-mono">~{totals.carbonKgCo2e.toFixed(4)} kgCO₂e</span>
       </div>
-      <div className="flex items-center justify-between bg-canopy-card border border-canopy-border rounded px-2.5 py-1.5">
-        <span className="text-canopy-muted text-[10px]">Water</span>
-        <span className="text-canopy-secondary text-[10px] tabular-nums font-mono">~{totals.waterLiters.toFixed(3)} L</span>
-      </div>
       <PotentialSavingsCard features={features} />
     </div>
   )

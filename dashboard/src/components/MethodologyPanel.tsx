@@ -54,10 +54,6 @@ export default function MethodologyPanel() {
         <Row label="M per day" value="~0.21 gCO₂/day per feature" />
       </Section>
 
-      <Section title="Water (WUE)">
-        <Row label="Water use efficiency" value="0.27 L/kWh" note="Azure US West average" />
-      </Section>
-
       <Section title="Functional Unit (R)">
         <Row label="R" value="1 day of operation" note="All SCI values are per-day" />
       </Section>

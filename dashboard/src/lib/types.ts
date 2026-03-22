@@ -29,7 +29,6 @@ export interface AnalysisResult {
   features: Feature[]
   totals: {
     electricityKwh: number
-    waterLiters: number
     carbonKgCo2e: number
   }
   sciTotals: SciTotals
@@ -49,7 +48,6 @@ export interface Feature {
   }
   sustainability: {
     electricityKwh: number
-    waterLiters: number
     carbonKgCo2e: number
     isEstimated: boolean
     infrastructureTag: string | null
@@ -77,7 +75,6 @@ export interface HistoryEntry {
   suggestionId: string
   patternType: string
   savingsElectricityKwh: number
-  savingsWaterLiters: number
   savingsCarbonKgCo2e: number
   savingsSciGco2PerR: number
 }

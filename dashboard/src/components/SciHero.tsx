@@ -105,12 +105,6 @@ export default function SciHero({ sciTotals, totals }: Props) {
               ~{totals.carbonKgCo2e.toFixed(4)} kgCO₂e/mo
             </span>
           </div>
-          <div className="flex flex-col gap-0.5">
-            <span className="text-[9px] uppercase tracking-widest text-canopy-muted">Water</span>
-            <span className="text-canopy-secondary text-xs font-mono tabular-nums">
-              ~{totals.waterLiters.toFixed(3)} L/mo
-            </span>
-          </div>
         </div>
 
       </div>

@@ -155,9 +155,16 @@
         <div class="panel-title">CANOPY — Codebase Features</div>
         <div class="panel-meta">${escHtml(metaLine)}</div>
       </div>
+      <button class="btn-dashboard" id="btn-dashboard">
+        <span class="btn-dashboard-icon">🌐</span> Open Dashboard
+      </button>
       <div class="feature-list">
         ${sorted.map(featureRow).join('')}
       </div>`;
+
+    root.querySelector('#btn-dashboard').addEventListener('click', () => {
+      vscode.postMessage({ type: 'openDashboard' });
+    });
 
     root.querySelectorAll('.feature-row[data-feature-id]').forEach(row => {
       row.addEventListener('click', () => {
@@ -178,11 +185,17 @@
       <div class="panel-header">
         <div class="panel-title">CANOPY — Codebase Features</div>
       </div>
+      <button class="btn-dashboard" id="btn-dashboard">
+        <span class="btn-dashboard-icon">🌐</span> Open Dashboard
+      </button>
       <div class="state-box">
         <div class="state-icon">⚠</div>
         <div class="state-message">${escHtml(message || 'Analysis failed')}</div>
         <button class="btn-retry" id="btn-retry">Re-analyze</button>
       </div>`;
+    root.querySelector('#btn-dashboard').addEventListener('click', () => {
+      vscode.postMessage({ type: 'openDashboard' });
+    });
     root.querySelector('#btn-retry')?.addEventListener('click', () => {
       vscode.postMessage({ type: 'reanalyze' });
     });
