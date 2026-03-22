@@ -138,6 +138,41 @@
       return;
     }
 
+    const allSuggestions = features.flatMap(f =>
+      f.suggestions
+        .filter(s => s.status === 'suggested')
+        .map(s => ({ ...s, featureName: f.name, featureId: f.id }))
+    );
+
+    root.innerHTML = `
+      <div class="tab-bar">
+        <button class="tab-btn active" data-tab="features">
+          Features <span class="tab-count">${features.length}</span>
+        </button>
+        <button class="tab-btn" data-tab="suggestions">
+          Suggestions <span class="tab-count ${allSuggestions.length > 0 ? 'tab-count-highlight' : ''}">${allSuggestions.length}</span>
+        </button>
+      </div>
+      <div id="tab-features" class="tab-panel"></div>
+      <div id="tab-suggestions" class="tab-panel" style="display:none"></div>
+    `;
+
+    renderFeaturesTab(features, root.querySelector('#tab-features'));
+    renderSuggestionsTab(allSuggestions, root.querySelector('#tab-suggestions'));
+
+    root.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        root.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        root.querySelectorAll('.tab-panel').forEach(p => { /** @type {HTMLElement} */ (p).style.display = 'none'; });
+        btn.classList.add('active');
+        const tabId = /** @type {HTMLElement} */ (btn).dataset.tab;
+        const panel = /** @type {HTMLElement|null} */ (root.querySelector(`#tab-${tabId}`));
+        if (panel) { panel.style.display = 'block'; }
+      });
+    });
+  }
+
+  function renderFeaturesTab(features, container) {
     const sorted = [...features].sort(
       (a, b) => ({ high: 0, medium: 1, low: 2 }[a.sustainabilityTier] - { high: 0, medium: 1, low: 2 }[b.sustainabilityTier])
     );
@@ -150,7 +185,7 @@
       `${features.length} FEATURE${features.length !== 1 ? 'S' : ''}` +
       (totalPending > 0 ? ` · ${totalPending} PENDING FIX${totalPending !== 1 ? 'ES' : ''}` : ' · ALL CLEAR');
 
-    root.innerHTML = `
+    container.innerHTML = `
       <div class="panel-header">
         <div class="panel-title">CANOPY — Codebase Features</div>
         <div class="panel-meta">${escHtml(metaLine)}</div>
@@ -162,13 +197,13 @@
         ${sorted.map(featureRow).join('')}
       </div>`;
 
-    root.querySelector('#btn-dashboard').addEventListener('click', () => {
+    container.querySelector('#btn-dashboard')?.addEventListener('click', () => {
       vscode.postMessage({ type: 'openDashboard' });
     });
 
-    root.querySelectorAll('.feature-row[data-feature-id]').forEach(row => {
+    container.querySelectorAll('.feature-row[data-feature-id]').forEach(row => {
       row.addEventListener('click', () => {
-        root.querySelectorAll('.feature-row').forEach(r => r.classList.remove('active'));
+        container.querySelectorAll('.feature-row').forEach(r => r.classList.remove('active'));
         row.classList.add('active');
 
         const featureId = row.getAttribute('data-feature-id');
@@ -176,6 +211,73 @@
         if (featureId && suggestionId) {
           vscode.postMessage({ type: 'openDiff', featureId, suggestionId });
         }
+      });
+    });
+  }
+
+  function renderSuggestionsTab(suggestions, container) {
+    if (suggestions.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">✅</div>
+          <div class="empty-title">No suggestions</div>
+          <div class="empty-desc">Run an analysis to detect inefficiency patterns</div>
+        </div>
+      `;
+      return;
+    }
+
+    const groups = {
+      POLLING:       suggestions.filter(s => s.patternType === 'POLLING'),
+      N_PLUS_ONE:    suggestions.filter(s => s.patternType === 'N_PLUS_ONE'),
+      SYNC_BLOCKING: suggestions.filter(s => s.patternType === 'SYNC_BLOCKING')
+    };
+
+    const patternMeta = {
+      POLLING:       { label: 'Polling',       icon: '🔄' },
+      N_PLUS_ONE:    { label: 'N+1 Queries',   icon: '🗄️' },
+      SYNC_BLOCKING: { label: 'Sync Blocking', icon: '⚡' }
+    };
+
+    let html = '';
+
+    for (const [patternType, items] of Object.entries(groups)) {
+      if (items.length === 0) continue;
+      const meta = patternMeta[patternType];
+
+      html += `
+        <div class="suggestion-group">
+          <div class="suggestion-group-header">
+            <span class="suggestion-group-icon">${meta.icon}</span>
+            <span class="suggestion-group-label">${meta.label}</span>
+            <span class="suggestion-group-count">${items.length}</span>
+          </div>
+          ${items.map(s => `
+            <div class="suggestion-card" data-feature-id="${escHtml(s.featureId)}" data-suggestion-id="${escHtml(s.id)}">
+              <div class="suggestion-feature-name">${escHtml(s.featureName)}</div>
+              <div class="suggestion-explanation">${escHtml(s.explanation)}</div>
+              <div class="suggestion-footer">
+                <span class="suggestion-savings">−${escHtml(String(s.estimatedSavingsPercent))}% energy</span>
+                <button class="btn-fix" data-feature-id="${escHtml(s.featureId)}" data-suggestion-id="${escHtml(s.id)}">
+                  View Fix →
+                </button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    container.innerHTML = html;
+
+    container.querySelectorAll('.btn-fix').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        vscode.postMessage({
+          type: 'openDiff',
+          featureId: btn.dataset.featureId,
+          suggestionId: btn.dataset.suggestionId
+        });
       });
     });
   }
