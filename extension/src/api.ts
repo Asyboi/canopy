@@ -1,5 +1,5 @@
 import { EventSource } from 'eventsource';
-import { AnalysisResult, Feature, FileChange } from './types';
+import { AnalysisResult, Feature, FileChange, FeaturePrediction } from './types';
 
 async function apiRequest<T>(url: string, options?: RequestInit): Promise<T> {
   const res = await fetch(url, options);
@@ -66,4 +66,22 @@ export async function dismissSuggestion(
 export function openAnalyzeStream(baseUrl: string, workspacePath: string): EventSource {
   const url = `${baseUrl}/analyze-stream?workspacePath=${encodeURIComponent(workspacePath)}`;
   return new EventSource(url);
+}
+
+export async function predictFeature(
+  baseUrl: string,
+  workspacePath: string,
+  description: string
+): Promise<FeaturePrediction> {
+  const response = await fetch(`${baseUrl}/predict-feature`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ workspacePath, description }),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error((err as any).error ?? `Prediction failed: ${response.status}`);
+  }
+  const data = await response.json();
+  return (data as any).prediction as FeaturePrediction;
 }

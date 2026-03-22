@@ -3,6 +3,7 @@ import cors from 'cors';
 import path from 'path';
 import { createAnalyzeRouter } from './routes/analyze';
 import { createResultsRouter } from './routes/results';
+import { createPredictRouter } from './routes/predict';
 
 export function createApp(): express.Application {
   const app = express();
@@ -16,6 +17,7 @@ export function createApp(): express.Application {
 
   app.use(createAnalyzeRouter());
   app.use(createResultsRouter());
+  app.use(createPredictRouter());
 
   // Serve the built dashboard (canopy/dashboard/dist)
   const dashboardDist = path.join(__dirname, '..', '..', 'dashboard', 'dist');

@@ -1,5 +1,7 @@
 import * as vscode from 'vscode';
 import { Feature } from './types';
+import { predictFeature } from './api';
+import { CanopyPredictionPanel } from './predictionPanel';
 
 type SidebarState =
   | { kind: 'welcome' }
@@ -29,7 +31,7 @@ export class CanopySidebarProvider implements vscode.WebviewViewProvider {
 
     webviewView.webview.html = this._getHtml(webviewView.webview);
 
-    webviewView.webview.onDidReceiveMessage((msg: any) => {
+    webviewView.webview.onDidReceiveMessage(async (msg: any) => {
       if (msg.type === 'reanalyze') {
         vscode.commands.executeCommand('canopy.reanalyze');
       }
@@ -38,6 +40,19 @@ export class CanopySidebarProvider implements vscode.WebviewViewProvider {
       }
       if (msg.type === 'openDashboard') {
         vscode.env.openExternal(vscode.Uri.parse(`${this._baseUrl}/?workspacePath=${encodeURIComponent(this._workspacePath)}`));
+      }
+      if (msg.type === 'predictFeature') {
+        this._view?.webview.postMessage({ type: 'predictionLoading' });
+        try {
+          const prediction = await predictFeature(this._baseUrl, this._workspacePath, msg.description);
+          CanopyPredictionPanel.createOrShow(this._extensionUri, prediction);
+          this._view?.webview.postMessage({ type: 'predictionComplete' });
+        } catch (err: any) {
+          this._view?.webview.postMessage({
+            type: 'predictionError',
+            error: err.message ?? 'Prediction failed',
+          });
+        }
       }
     });
 

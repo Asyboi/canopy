@@ -3,6 +3,10 @@
   const vscode = acquireVsCodeApi();
   const root = /** @type {HTMLElement} */ (document.getElementById('root'));
 
+  // ── Prediction message handlers (set by renderPredictTab) ─────────────
+  /** @type {any} */
+  let _predictionHandlers = null;
+
   // ── Smooth progress bar ───────────────────────────────────────────────
   let _displayPct = 0;
   let _targetPct  = 0;
@@ -37,7 +41,10 @@
 
   window.addEventListener('message', (event) => {
     const msg = event.data;
-    if (msg.type === 'state') { render(msg.state); }
+    if (msg.type === 'state') { render(msg.state); return; }
+    if (_predictionHandlers && _predictionHandlers[msg.type]) {
+      _predictionHandlers[msg.type](msg); return;
+    }
   });
 
   // ── Render dispatcher ─────────────────────────────────────────────────
@@ -56,13 +63,14 @@
   function renderWelcome() {
     resetProgress();
     root.innerHTML = `
-      <div class="panel-header">
-        <div class="panel-title">CANOPY — Codebase Features</div>
-      </div>
-      <div class="state-box">
-        <div class="state-icon">🌿</div>
-        <div class="state-message">Starting analysis…</div>
+      <div class="welcome-container">
+        <div class="welcome-icon">🌿</div>
+        <h1 class="welcome-title">Welcome to Canopy</h1>
+        <button class="scan-btn" id="btn-scan">Scan</button>
       </div>`;
+    root.querySelector('#btn-scan')?.addEventListener('click', () => {
+      vscode.postMessage({ type: 'reanalyze' });
+    });
   }
 
   const PIPELINE = [
@@ -152,13 +160,17 @@
         <button class="tab-btn" data-tab="suggestions">
           Suggestions <span class="tab-count ${allSuggestions.length > 0 ? 'tab-count-highlight' : ''}">${allSuggestions.length}</span>
         </button>
+        <button class="tab-btn" data-tab="predict">
+          Predict <span class="tab-count">✨</span>
+        </button>
       </div>
       <div id="tab-features" class="tab-panel"></div>
       <div id="tab-suggestions" class="tab-panel" style="display:none"></div>
+      <div id="tab-predict" class="tab-panel" style="display:none"></div>
     `;
 
     renderFeaturesTab(features, root.querySelector('#tab-features'));
-    renderSuggestionsTab(allSuggestions, root.querySelector('#tab-suggestions'));
+    const renderedTabs = new Set(['features']);
 
     root.querySelectorAll('.tab-btn').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -167,7 +179,14 @@
         btn.classList.add('active');
         const tabId = /** @type {HTMLElement} */ (btn).dataset.tab;
         const panel = /** @type {HTMLElement|null} */ (root.querySelector(`#tab-${tabId}`));
-        if (panel) { panel.style.display = 'block'; }
+        if (panel && tabId) {
+          if (!renderedTabs.has(tabId)) {
+            if (tabId === 'suggestions') { renderSuggestionsTab(allSuggestions, panel); }
+            if (tabId === 'predict')     { renderPredictTab(panel); }
+            renderedTabs.add(tabId);
+          }
+          panel.style.display = 'block';
+        }
       });
     });
   }
@@ -280,6 +299,67 @@
         });
       });
     });
+  }
+
+  function renderPredictTab(container) {
+    container.innerHTML = `
+      <div class="predict-section">
+        <div class="predict-intro">
+          Describe a feature you want to build. Gemini will predict its
+          sustainability cost and suggest a greener alternative.
+        </div>
+        <textarea
+          id="predict-input"
+          class="predict-textarea"
+          placeholder="e.g. Add real-time notifications that poll the server every 3 seconds for new messages"
+          rows="4"
+        ></textarea>
+        <button class="btn-predict" id="btn-predict">
+          ✨ Predict Sustainability Cost
+        </button>
+        <div id="predict-status" class="predict-status" style="display:none"></div>
+      </div>
+    `;
+
+    const btn = container.querySelector('#btn-predict');
+    const input = container.querySelector('#predict-input');
+    const status = container.querySelector('#predict-status');
+
+    btn.addEventListener('click', () => {
+      const description = input.value.trim();
+      if (!description) {
+        status.textContent = 'Please describe the feature first.';
+        status.className = 'predict-status predict-status-error';
+        status.style.display = 'block';
+        return;
+      }
+      status.style.display = 'none';
+      btn.disabled = true;
+      btn.textContent = '✨ Predicting...';
+      vscode.postMessage({ type: 'predictFeature', description });
+    });
+
+    _predictionHandlers = {
+      predictionLoading: () => {
+        btn.disabled = true;
+        btn.textContent = '✨ Predicting...';
+      },
+      predictionComplete: () => {
+        btn.disabled = false;
+        btn.textContent = '✨ Predict Sustainability Cost';
+        input.value = '';
+        status.textContent = '✅ Prediction ready — results opened beside editor';
+        status.className = 'predict-status predict-status-success';
+        status.style.display = 'block';
+      },
+      predictionError: (msg) => {
+        btn.disabled = false;
+        btn.textContent = '✨ Predict Sustainability Cost';
+        status.textContent = msg.error;
+        status.className = 'predict-status predict-status-error';
+        status.style.display = 'block';
+      }
+    };
   }
 
   function renderError(message) {

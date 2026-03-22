@@ -14,7 +14,7 @@ export async function labelFeature(
   fileList: string,
   importSummary: string
 ): Promise<string> {
-  const model = getClient().getGenerativeModel({ model: 'gemini-1.5-flash' });
+  const model = getClient().getGenerativeModel({ model: 'gemini-2.0-flash' });
 
   const prompt = `You are analyzing a TypeScript codebase. Given the following list of files and their import relationships, assign a short human-readable feature name (2-4 words, title case) that describes what this group of files does together. Reply with only the feature name, nothing else.
 
