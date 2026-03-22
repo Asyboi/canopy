@@ -6,11 +6,15 @@ import FeatureList from './components/FeatureList'
 import GraphPanel from './components/GraphPanel'
 import RightPanel from './components/RightPanel'
 import EquivalentsPopup from './components/EquivalentsPopup'
+import LandingPage from './components/LandingPage'
 import type { Feature } from './lib/types'
 
 export default function App() {
   const { analysis, loading, error, consecutiveFailures, workspacePath, isAnalyzing, reanalyze } = useAnalysis()
   const [selectedFeatureId, setSelectedFeatureId] = useState<string | null>(null)
+
+  // Show landing page when no workspace is specified
+  if (!workspacePath) return <LandingPage />
 
   const selectedFeature: Feature | null =
     analysis?.features.find((f) => f.id === selectedFeatureId) ?? null
@@ -33,20 +37,6 @@ export default function App() {
       {consecutiveFailures >= 3 && (
         <div className="bg-red-900/40 border-b border-red-700/50 px-4 py-2 text-sm text-red-300 text-center flex-shrink-0">
           Connection lost — retrying…
-        </div>
-      )}
-
-      {/* No workspacePath */}
-      {!workspacePath && (
-        <div className="flex flex-1 items-center justify-center text-canopy-muted text-sm">
-          <div className="text-center">
-            <div className="text-4xl mb-3">🌿</div>
-            <p>No workspace path provided.</p>
-            <p className="mt-1 text-xs">
-              Open this dashboard with{' '}
-              <code className="bg-canopy-card px-1 rounded">?workspacePath=/path/to/project</code>
-            </p>
-          </div>
         </div>
       )}
 
