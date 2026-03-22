@@ -3,7 +3,7 @@ import { Feature } from './types';
 
 type SidebarState =
   | { kind: 'welcome' }
-  | { kind: 'analyzing'; steps: { message: string; done: boolean }[] }
+  | { kind: 'analyzing'; steps: { message: string; done: boolean }[]; currentStep: number; percent: number }
   | { kind: 'ready'; features: Feature[] }
   | { kind: 'error'; message: string };
 
@@ -46,17 +46,19 @@ export class CanopySidebarProvider implements vscode.WebviewViewProvider {
   }
 
   setAnalyzing() {
-    this._state = { kind: 'analyzing', steps: [] };
+    this._state = { kind: 'analyzing', steps: [], currentStep: 0, percent: 0 };
     this._send();
   }
 
-  updateScanProgress(_step: number, message: string, _percent: number) {
+  updateScanProgress(step: number, message: string, percent: number) {
     if (this._state.kind !== 'analyzing') {
-      this._state = { kind: 'analyzing', steps: [] };
+      this._state = { kind: 'analyzing', steps: [], currentStep: step, percent };
     }
     const steps = this._state.steps;
     if (steps.length > 0) { steps[steps.length - 1].done = true; }
     steps.push({ message, done: false });
+    this._state.currentStep = step;
+    this._state.percent = percent;
     this._send();
   }
 

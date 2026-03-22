@@ -83,8 +83,8 @@ export async function activate(context: vscode.ExtensionContext) {
     })
   );
 
-  // 6. Run initial analysis
-  await runAnalysis(baseUrl, workspacePath, sidebarProvider, updateStatusBar);
+  // 6. Run initial analysis — don't await; errors are shown in sidebar, not thrown
+  runAnalysis(baseUrl, workspacePath, sidebarProvider, updateStatusBar).catch(() => {});
 
   // 7. Watch for file saves — debounce re-analysis prompt
   let debounceTimer: NodeJS.Timeout | undefined;
