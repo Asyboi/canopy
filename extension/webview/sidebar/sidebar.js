@@ -1,6 +1,6 @@
 // @ts-check
 (function () {
-  const vscode = acquireVsCodeApi();
+  const vscode = /** @type {any} */ (/** @type {any} */ (globalThis).acquireVsCodeApi)();
   const root = /** @type {HTMLElement} */ (document.getElementById('root'));
 
   // ── Prediction message handlers (set by renderPredictTab) ─────────────
