@@ -33,7 +33,7 @@ export class CanopySidebarProvider implements vscode.WebviewViewProvider {
         vscode.commands.executeCommand('canopy.openDiff', msg.featureId, msg.suggestionId);
       }
       if (msg.type === 'openDashboard') {
-        vscode.commands.executeCommand('canopy.openDashboard');
+        vscode.env.openExternal(vscode.Uri.parse('https://cleancanopy.us/dashboard'));
       }
     });
 

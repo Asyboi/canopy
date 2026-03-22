@@ -68,6 +68,9 @@
     );
 
     root.innerHTML = `
+      <button class="btn-dashboard" id="btn-dashboard">
+        <span class="btn-dashboard-icon">🌐</span> Open Dashboard
+      </button>
       <div class="summary-bar">
         <div class="summary-stat">
           <span class="stat-value accent-blue">${avgSci.toFixed(0)}</span>
@@ -90,6 +93,10 @@
         ${sorted.map(featureCard).join('')}
       </div>`;
 
+    root.querySelector('#btn-dashboard').addEventListener('click', () => {
+      vscode.postMessage({ type: 'openDashboard' });
+    });
+
     root.querySelectorAll('[data-open-diff]').forEach(btn => {
       btn.addEventListener('click', () => {
         vscode.postMessage({
@@ -103,11 +110,17 @@
 
   function renderError(message) {
     root.innerHTML = `
+      <button class="btn-dashboard" id="btn-dashboard">
+        <span class="btn-dashboard-icon">🌐</span> Open Dashboard
+      </button>
       <div class="state-box">
         <div class="state-icon">⚠️</div>
         <div class="state-message">${escHtml(message || 'Analysis failed')}</div>
         <button class="btn-retry" id="btn-retry">Re-analyze</button>
       </div>`;
+    root.querySelector('#btn-dashboard').addEventListener('click', () => {
+      vscode.postMessage({ type: 'openDashboard' });
+    });
     root.querySelector('#btn-retry')?.addEventListener('click', () => {
       vscode.postMessage({ type: 'reanalyze' });
     });

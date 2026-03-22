@@ -91,12 +91,15 @@ extension/
 │   ├── server.ts              # Server lifecycle: spawn, port discovery, health check
 │   ├── api.ts                 # All HTTP calls to the backend
 │   ├── types.ts               # Shared TypeScript interfaces (copied from server)
-│   ├── sidebar.ts             # TreeDataProvider for feature list
+│   ├── sidebar.ts             # WebviewViewProvider for sidebar (accepts baseUrl + workspacePath)
 │   ├── graphPanel.ts          # WebviewPanel wrapper for D3 graph
 │   └── diffPanel.ts           # WebviewPanel wrapper for diff preview
 └── webview/
     ├── graph/
     │   ├── graph.js           # D3 force graph logic (plain JS, runs in webview)
+    │   └── styles.css
+    ├── sidebar/
+    │   ├── sidebar.js         # Sidebar UI: welcome/analyzing/ready/error states + dashboard button
     │   └── styles.css
     └── diff/
         ├── diff.js            # Diff panel button handlers (plain JS, runs in webview)
@@ -105,7 +108,7 @@ extension/
 ## Activation flow
 1. Check workspace is open
 2. Start server via ensureServerRunning() — spawns node dist/index.js in server/ dir
-3. Register sidebar TreeDataProvider for canopy.features view
+3. Register sidebar WebviewViewProvider for canopy.features view
 4. Register commands: canopy.openGraph, canopy.reanalyze, canopy.openDashboard
 5. Run initial analysis with SSE progress tracking
 6. Watch file saves with 30s debounce for "outdated" nudge
@@ -113,7 +116,10 @@ extension/
 ## Commands
 - canopy.openGraph — opens D3 graph in beside panel
 - canopy.reanalyze — re-runs full analysis pipeline
-- canopy.openDashboard — opens web dashboard in browser
+- canopy.openDashboard — opens CanopyDashboardPanel (VS Code webview panel)
+
+## Sidebar dashboard button
+The sidebar renders an "Open Dashboard" button at the top in `ready` and `error` states (not in `welcome` or `analyzing`). The button posts `{ type: 'openDashboard' }` to the extension host, which calls `vscode.env.openExternal` to open `{baseUrl}/dashboard?workspacePath=...` in the browser. This is handled in `sidebar.ts`'s `onDidReceiveMessage` — distinct from the `canopy.openDashboard` command which opens the in-editor panel.
 
 ## Key architectural decisions
 - Webview scripts are plain JS (no separate TS compilation for webviews)
