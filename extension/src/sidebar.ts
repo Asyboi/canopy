@@ -13,7 +13,11 @@ export class CanopySidebarProvider implements vscode.WebviewViewProvider {
   private _view?: vscode.WebviewView;
   private _state: SidebarState = { kind: 'welcome' };
 
-  constructor(private readonly _extensionUri: vscode.Uri) {}
+  constructor(
+    private readonly _extensionUri: vscode.Uri,
+    private readonly _workspacePath: string,
+    private readonly _baseUrl: string,
+  ) {}
 
   resolveWebviewView(webviewView: vscode.WebviewView) {
     this._view = webviewView;
@@ -33,7 +37,7 @@ export class CanopySidebarProvider implements vscode.WebviewViewProvider {
         vscode.commands.executeCommand('canopy.openDiff', msg.featureId, msg.suggestionId);
       }
       if (msg.type === 'openDashboard') {
-        vscode.env.openExternal(vscode.Uri.parse('https://cleancanopy.us/dashboard'));
+        vscode.env.openExternal(vscode.Uri.parse(`${this._baseUrl}/?workspacePath=${encodeURIComponent(this._workspacePath)}`));
       }
     });
 
