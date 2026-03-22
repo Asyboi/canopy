@@ -15,7 +15,7 @@ export class CanopyPredictionPanel {
       'canopyPrediction',
       `✨ Canopy Predict`,
       vscode.ViewColumn.Beside,
-      { enableScripts: false }
+      { enableScripts: true }
     );
     CanopyPredictionPanel.currentPanel = new CanopyPredictionPanel(panel, prediction);
   }
@@ -23,6 +23,26 @@ export class CanopyPredictionPanel {
   private constructor(panel: vscode.WebviewPanel, prediction: FeaturePrediction) {
     this._panel = panel;
     this._update(prediction);
+    panel.webview.onDidReceiveMessage(async msg => {
+      if (msg.type === 'applyGreenerCode') {
+        const skeleton = msg.codeSkeleton as string;
+        const featureName = msg.featureName as string;
+
+        const document = await vscode.workspace.openTextDocument({
+          language: 'typescript',
+          content: skeleton
+        });
+
+        await vscode.window.showTextDocument(document, {
+          viewColumn: vscode.ViewColumn.One,
+          preserveFocus: false
+        });
+
+        vscode.window.showInformationMessage(
+          `✅ Canopy: Greener implementation for "${featureName}" is ready — save it to your project.`
+        );
+      }
+    });
     this._panel.onDidDispose(() => {
       CanopyPredictionPanel.currentPanel = undefined;
     });
@@ -64,7 +84,7 @@ export class CanopyPredictionPanel {
 <html>
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline';">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline';">
 <style>
   body { font-family: var(--vscode-font-family); font-size: 13px; color: var(--vscode-foreground); padding: 20px; margin: 0; background: var(--vscode-editor-background); }
   h1 { font-size: 18px; margin: 0 0 4px; }
@@ -123,6 +143,33 @@ export class CanopyPredictionPanel {
 
   <div class="code-header">💡 ${esc(p.greenerAlternative.featureName)} — suggested implementation</div>
   <pre>${esc(p.greenerAlternative.codeSkeleton)}</pre>
+
+  <div style="margin-top: 16px; text-align: center;">
+    <button id="btn-apply-greener" style="
+      padding: 10px 24px;
+      background: #22c55e;
+      color: #000;
+      border: none;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      width: 100%;
+    ">
+      ⚡ Apply Greener Code to Project
+    </button>
+  </div>
+
+  <script>
+    const vscode = acquireVsCodeApi();
+    document.getElementById('btn-apply-greener').addEventListener('click', () => {
+      vscode.postMessage({
+        type: 'applyGreenerCode',
+        codeSkeleton: ${JSON.stringify(p.greenerAlternative.codeSkeleton)},
+        featureName: ${JSON.stringify(p.greenerAlternative.featureName)}
+      });
+    });
+  </script>
 
   <p class="predicted-label">⚠️ These are predicted estimates based on the feature description, not measured values.</p>
 </body>
