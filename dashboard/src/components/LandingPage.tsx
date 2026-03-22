@@ -188,7 +188,7 @@ function Hero() {
                 Install for VS Code
               </a>
               <a
-                href="?workspacePath=/demo"
+                href="/dashboard"
                 className="px-6 py-2.5 rounded-lg border border-canopy-border text-canopy-secondary text-[14px] hover:border-canopy-accent/35 hover:text-canopy-text transition-all duration-200 hover:bg-canopy-surface/40"
               >
                 View Dashboard →
