@@ -1,0 +1,13 @@
+{
+  "name": "canopy-dashboard",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "serve": "cd dashboard/dist/dashboard && python3 -m http.server 5174",
+    "start:backend": "node server/mock-backend.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5"
+  }
+}

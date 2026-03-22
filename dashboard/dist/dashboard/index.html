@@ -1,0 +1,2030 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Canopy Dashboard — Sustainability Analysis</title>
+  <style>
+    /* ============================================================================
+       RESET & BASE STYLES
+       ============================================================================ */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, bocy {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    bocy {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+      background-color: #0f172a;
+      color: #f8fafc;
+      line-height: 1.5;
+    }
+
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #475569;
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #64748b;
+    }
+
+    /* ============================================================================
+       LAYOUT
+       ============================================================================ */
+    .dashboard {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      height: 100%;
+    }
+
+    .dashboard-header {
+      height: 64px;
+      background-color: #1e293b;
+      border-bottom: 1px solid #334155;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      flex-shrink: 0;
+    }
+
+    .dashboard-content {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .left-panel {
+      width: 280px;
+      background-color: #1e293b;
+      border-right: 1px solid #334155;
+      overflow-y: auto;
+      flex-shrink: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .center-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .right-panel {
+      width: 320px;
+      background-color: #1e293b;
+      border-left: 1px solid #334155;
+      overflow-y: auto;
+      flex-shrink: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ============================================================================
+       HEADER
+       ============================================================================ */
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    .header-center {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 0.875rem;
+      color: #cbd5e1;
+    }
+
+    .live-indicator {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      background-color: #22c55e;
+      border-radius: 50%;
+      animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 300ms ease;
+      font-family: inherit;
+    }
+
+    .btn-primary {
+      background-color: #22c55e;
+      color: #0f172a;
+    }
+
+    .btn-primary:hover {
+      background-color: #16a34a;
+      box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+    }
+
+    .btn-outline {
+      border: 1.5px solid #22c55e;
+      color: #22c55e;
+      background-color: transparent;
+    }
+
+    .btn-outline:hover {
+      background-color: rgba(34, 197, 94, 0.1);
+    }
+
+    .btn-secondary {
+      background-color: #475569;
+      color: #f8fafc;
+    }
+
+    .btn-secondary:hover {
+      background-color: #64748b;
+    }
+
+    .btn-text {
+      background: none;
+      color: #cbd5e1;
+      padding: 4px 8px;
+    }
+
+    .btn-text:hover {
+      color: #f8fafc;
+    }
+
+    /* ============================================================================
+       LEFT PANEL — STAT CARDS & FEATURE LIST
+       ============================================================================ */
+    .stat-cards {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+
+    .stat-card {
+      background-color: #0f172a;
+      border-radius: 10px;
+      padding: 16px;
+      border-left: 4px solid;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+      transition: all 300ms ease;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    }
+
+    .stat-card.energy {
+      border-left-color: #22c55e;
+    }
+
+    .stat-card.water {
+      border-left-color: #3b82f6;
+    }
+
+    .stat-card.carbon {
+      border-left-color: #f59e0b;
+    }
+
+    .stat-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.75rem;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+
+    .stat-value {
+      font-size: 1.75rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .stat-unit {
+      font-size: 0.75rem;
+      color: #94a3b8;
+    }
+
+    .stat-impact {
+      margin-top: 10px;
+      padding: 6px 10px;
+      background-color: rgba(255,255,255,0.05);
+      border-radius: 8px;
+      font-size: 0.75rem;
+      color: #cbd5e1;
+      line-height: 1.4;
+    }
+
+    .impact-grid {
+      background-color: rgba(34, 197, 94, 0.08);
+      border: 1px solid rgba(34, 197, 94, 0.2);
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .impact-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.7rem;
+      color: #22c55e;
+    }
+
+    .feature-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .feature-row {
+      background-color: #0f172a;
+      border-radius: 10px;
+      padding: 12px;
+      cursor: pointer;
+      border-left: 3px solid transparent;
+      transition: all 300ms ease;
+    }
+
+    .feature-row:hover {
+      background-color: #1e293b;
+    }
+
+    .feature-row.selected {
+      border-left-color: #ffffff;
+      background-color: #1e293b;
+    }
+
+    .feature-name {
+      font-weight: 600;
+      font-size: 0.875rem;
+      margin-bottom: 6px;
+    }
+
+    .feature-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+      flex-wrap: wrap;
+    }
+
+    .tier-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .tier-badge.high {
+      background-color: #ef4444;
+      color: #ffffff;
+    }
+
+    .tier-badge.medium {
+      background-color: #eab308;
+      color: #000000;
+    }
+
+    .tier-badge.low {
+      background-color: #22c55e;
+      color: #000000;
+    }
+
+    .feature-stats {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 0.75rem;
+      color: #cbd5e1;
+    }
+
+    .feature-suggestion {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      background-color: rgba(34, 197, 94, 0.1);
+      color: #22c55e;
+      border-radius: 12px;
+      font-size: 0.7rem;
+      font-weight: 600;
+    }
+
+    /* ============================================================================
+       CENTER PANEL — CANVAS GRAPH
+       ============================================================================ */
+    #canvas {
+      flex: 1;
+      display: block;
+      background-color: #0f172a;
+      cursor: grab;
+    }
+
+    #canvas:active {
+      cursor: grabbing;
+    }
+
+    .canvas-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: rgba(0, 0, 0, 0.4);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 300ms ease;
+      z-index: 5;
+    }
+
+    .canvas-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .spinner {
+      width: 48px;
+      height: 48px;
+      border: 3px solid #334155;
+      border-top-color: #22c55e;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* ============================================================================
+       RIGHT PANEL — SUGGESTIONS
+       ============================================================================ */
+    .tabs {
+      display: flex;
+      gap: 16px;
+      border-bottom: 1px solid #334155;
+      margin-bottom: 16px;
+      flex-shrink: 0;
+    }
+
+    .tab-button {
+      padding: 12px 0;
+      background: none;
+      border: none;
+      color: #cbd5e1;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.875rem;
+      position: relative;
+      transition: color 300ms ease;
+    }
+
+    .tab-button:hover {
+      color: #f8fafc;
+    }
+
+    .tab-button.active {
+      color: #22c55e;
+    }
+
+    .tab-button.active::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background-color: #22c55e;
+    }
+
+    .tab-content {
+      display: none;
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .tab-content.active {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .suggestion-group {
+      margin-bottom: 16px;
+    }
+
+    .suggestion-group-header {
+      font-weight: 600;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      color: #94a3b8;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+
+    .suggestion-card {
+      background-color: #0f172a;
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 8px;
+      border: 1px solid #334155;
+      transition: all 300ms ease;
+    }
+
+    .suggestion-card:hover {
+      border-color: #475569;
+      background-color: #1e293b;
+    }
+
+    .suggestion-feature {
+      font-weight: 600;
+      font-size: 0.875rem;
+      margin-bottom: 6px;
+    }
+
+    .suggestion-pattern {
+      display: inline-block;
+      padding: 2px 8px;
+      background-color: #334155;
+      color: #cbd5e1;
+      border-radius: 6px;
+      font-size: 0.65rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .suggestion-explanation {
+      font-size: 0.75rem;
+      color: #cbd5e1;
+      line-height: 1.4;
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: color 300ms ease;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+    }
+
+    .suggestion-explanation:hover {
+      color: #f8fafc;
+    }
+
+    .suggestion-savings {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 0.7rem;
+      color: #22c55e;
+      margin-bottom: 10px;
+      font-weight: 600;
+      flex-wrap: wrap;
+    }
+
+    .suggestion-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .suggestion-actions .btn {
+      flex: 1;
+      padding: 6px 12px;
+      font-size: 0.75rem;
+    }
+
+    .history-banner {
+      background-color: rgba(34, 197, 94, 0.1);
+      border: 1px solid #22c55e;
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 16px;
+      font-size: 0.875rem;
+      color: #22c55e;
+      font-weight: 600;
+    }
+
+    .history-entry {
+      background-color: #0f172a;
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 8px;
+      border-left: 3px solid;
+      font-size: 0.75rem;
+      transition: all 300ms ease;
+    }
+
+    .history-entry.applied {
+      border-left-color: #22c55e;
+      color: #22c55e;
+    }
+
+    .history-entry.dismissed {
+      border-left-color: #94a3b8;
+      color: #94a3b8;
+    }
+
+    .history-entry-savings {
+      margin-top: 6px;
+      font-size: 0.7rem;
+      opacity: 0.8;
+    }
+
+    /* ============================================================================
+       MODAL
+       ============================================================================ */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.6);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 20px;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal-card {
+      background-color: #1e293b;
+      border-radius: 12px;
+      max-width: 700px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+      animation: modalIn 300ms ease;
+    }
+
+    @keyframes modalIn {
+      from {
+        opacity: 0;
+        transform: scale(0.95);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 24px;
+      border-bottom: 1px solid #334155;
+    }
+
+    .modal-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      color: #cbd5e1;
+      font-size: 1.5rem;
+      cursor: pointer;
+      transition: color 300ms ease;
+      padding: 0;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-close:hover {
+      color: #f8fafc;
+    }
+
+    .modal-bocy {
+      padding: 24px;
+    }
+
+    .modal-explanation {
+      color: #cbd5e1;
+      line-height: 1.6;
+      margin-bottom: 24px;
+      font-size: 0.875rem;
+    }
+
+    .code-comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .code-section {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .code-header {
+      font-weight: 600;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      letter-spacing: 0.5px;
+    }
+
+    .code-header.current {
+      color: #ef4444;
+    }
+
+    .code-header.suggested {
+      color: #22c55e;
+    }
+
+    .code-block {
+      background-color: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 12px;
+      font-family: 'SF Mono', 'Fira Code', 'Courier New', monospace;
+      font-size: 0.7rem;
+      line-height: 1.5;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+      color: #cbd5e1;
+    }
+
+    .code-block.current {
+      background-color: rgba(239, 68, 68, 0.05);
+    }
+
+    .code-block.suggested {
+      background-color: rgba(34, 197, 94, 0.05);
+    }
+
+    .modal-savings {
+      background-color: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 24px;
+      font-size: 0.875rem;
+      color: #cbd5e1;
+    }
+
+    .modal-note {
+      background-color: rgba(59, 130, 246, 0.1);
+      border: 1px solid #3b82f6;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 24px;
+      font-size: 0.75rem;
+      color: #bfdbfe;
+      line-height: 1.5;
+    }
+
+    .modal-footer {
+      display: flex;
+      gap: 12px;
+      border-top: 1px solid #334155;
+      padding: 20px 24px;
+      flex-shrink: 0;
+    }
+
+    .modal-footer .btn {
+      flex: 1;
+    }
+
+    /* ============================================================================
+       TOASTS
+       ============================================================================ */
+    .toast-container {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 200;
+      pointer-events: none;
+      max-width: 400px;
+    }
+
+    .toast {
+      background-color: #1e293b;
+      border-left: 4px solid;
+      border-radius: 8px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 0.875rem;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+      animation: toastIn 300ms ease;
+      pointer-events: auto;
+      position: relative;
+    }
+
+    @keyframes toastIn {
+      from {
+        opacity: 0;
+        transform: translateX(100%);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .toast.success {
+      border-left-color: #22c55e;
+    }
+
+    .toast.info {
+      border-left-color: #3b82f6;
+    }
+
+    .toast.error {
+      border-left-color: #ef4444;
+    }
+
+    .toast-close {
+      background: none;
+      border: none;
+      color: #cbd5e1;
+      cursor: pointer;
+      padding: 0;
+      margin-left: auto;
+      transition: color 300ms ease;
+    }
+
+    .toast-close:hover {
+      color: #f8fafc;
+    }
+
+    /* ============================================================================
+       RESPONSIVE
+       ============================================================================ */
+    @media (max-width: 1280px) {
+      .dashboard-content {
+        flex-direction: column;
+      }
+
+      .left-panel {
+        width: 100%;
+        height: auto;
+        max-height: 200px;
+        flex-direction: row;
+        border-right: none;
+        border-bottom: 1px solid #334155;
+        overflow-y: visible;
+        overflow-x: auto;
+      }
+
+      .stat-cards {
+        flex-direction: row;
+        min-width: min-content;
+      }
+
+      .right-panel {
+        width: 100%;
+        height: auto;
+        max-height: 200px;
+        border-left: none;
+        border-top: 1px solid #334155;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .dashboard-content {
+        flex-direction: column;
+      }
+
+      .left-panel {
+        width: 100%;
+        height: auto;
+        max-height: none;
+        flex-direction: column;
+        border-right: none;
+        border-bottom: 1px solid #334155;
+        overflow-y: auto;
+      }
+
+      .stat-cards {
+        grid-template-columns: repeat(3, 1fr);
+      }
+
+      .right-panel {
+        width: 100%;
+        height: auto;
+        max-height: none;
+        border-left: none;
+        border-top: 1px solid #334155;
+      }
+
+      .code-comparison {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<bocy>
+  <div class="dashboard">
+    <!-- Header -->
+    <div class="dashboard-header">
+      <div class="header-left">
+        🌿 Canopy
+      </div>
+      <div class="header-center">
+        <button class="btn btn-outline" id="reanalyzeBtn">Re-analyze</button>
+      </div>
+      <div class="header-right">
+        <div class="live-indicator">
+          <span id="lastUpdated">just now</span>
+          <div class="live-dot"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="dashboard-content">
+      <!-- Left Panel -->
+      <div class="left-panel">
+        <div class="stat-cards">
+          <div class="stat-card energy">
+            <div class="stat-header">
+              <span>⚡</span>
+              <span>ENERGY</span>
+            </div>
+            <div class="stat-value"><span id="energyStat">0</span> <span style="font-size:0.875rem;font-weight:600">kWh</span></div>
+            <div class="stat-unit">/month</div>
+            <div class="stat-impact" id="energyImpact"></div>
+          </div>
+          <div class="stat-card water">
+            <div class="stat-header">
+              <span>💧</span>
+              <span>WATER</span>
+            </div>
+            <div class="stat-value"><span id="waterStat">0</span> <span style="font-size:0.875rem;font-weight:600">L</span></div>
+            <div class="stat-unit">/month</div>
+            <div class="stat-impact" id="waterImpact"></div>
+          </div>
+          <div class="stat-card carbon">
+            <div class="stat-header">
+              <span>🏭</span>
+              <span>CARBON</span>
+            </div>
+            <div class="stat-value"><span id="carbonStat">0</span> <span style="font-size:0.875rem;font-weight:600">kg</span></div>
+            <div class="stat-unit">CO₂e/month</div>
+            <div class="stat-impact" id="carbonImpact"></div>
+          </div>
+        </div>
+
+        <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#94a3b8;margin-bottom:-12px;">Features</div>
+        <div class="feature-list" id="featureList"></div>
+      </div>
+
+      <!-- Center Panel -->
+      <div class="center-panel">
+        <canvas id="canvas"></canvas>
+        <div class="canvas-overlay" id="canvasOverlay">
+          <div class="spinner"></div>
+        </div>
+      </div>
+
+      <!-- Right Panel -->
+      <div class="right-panel">
+        <div class="tabs">
+          <button class="tab-button active" data-tab="pending">Pending</button>
+          <button class="tab-button" data-tab="history">History</button>
+        </div>
+
+        <div class="tab-content active" id="pendingTab">
+          <div id="pendingSuggestions"></div>
+        </div>
+
+        <div class="tab-content" id="historyTab">
+          <div id="historySuggestions"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title" id="modalTitle"></div>
+        <button class="modal-close" id="modalClose">&times;</button>
+      </div>
+      <div class="modal-bocy">
+        <div class="modal-explanation" id="modalExplanation"></div>
+        <div class="code-comparison">
+          <div class="code-section">
+            <div class="code-header current">Current Code</div>
+            <pre class="code-block current" id="modalCurrentCode"></pre>
+          </div>
+          <div class="code-section">
+            <div class="code-header suggested">Suggested Code</div>
+            <pre class="code-block suggested" id="modalSuggestedCode"></pre>
+          </div>
+        </div>
+        <div class="modal-savings" id="modalSavings"></div>
+        <div class="modal-note">
+          💡 Applying from the dashboard marks the suggestion as accepted. Open in VS Code to write the changes to your files.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" id="modalApply">Apply Changes</button>
+        <button class="btn btn-secondary" id="modalDismiss">Dismiss</button>
+        <button class="btn btn-text" id="modalCancel">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script>
+    // ========================================================================
+    // MOCK DATA
+    // ========================================================================
+    const analysis = {
+      generatedAt: new Date().toISOString(),
+      features: [
+        {
+          id: 'f1',
+          name: 'Notification System',
+          sustainabilityTier: 'high',
+          complexityScore: 65,
+          dependencies: ['f2', 'f4'],
+          stats: { energyKwh: 12.4, waterLiters: 22.1, co2Kg: 2.88 },
+          suggestions: [
+            {
+              id: 's1',
+              featureId: 'f1',
+              patternType: 'polling',
+              status: 'suggested',
+              explanation:
+                'Polls server every 2 seconds for new notifications. Switching to WebSocket-based push notifications would eliminate approximately 97% of redundant HTTP requests, drastically reducing server load and energy consumption.',
+              estimatedSavings: { energyKwh: 4.4, waterLiters: 7.9, co2Kg: 1.02 },
+              savingsPercent: 61,
+              currentCode:
+                'setInterval(async () => {\n  const res = await fetch("/api/notifications");\n  const data = await res.json();\n  setNotifications(data);\n}, 2000);',
+              suggestedCode:
+                'const ws = new WebSocket("/ws/notifications");\n\nws.onmessage = (event) => {\n  const data = JSON.parse(event.data);\n  setNotifications(data);\n};'
+            }
+          ]
+        },
+        {
+          id: 'f2',
+          name: 'User Feed',
+          sustainabilityTier: 'medium',
+          complexityScore: 48,
+          dependencies: ['f3'],
+          stats: { energyKwh: 8.2, waterLiters: 14.8, co2Kg: 1.91 },
+          suggestions: [
+            {
+              id: 's2',
+              featureId: 'f2',
+              patternType: 'n_plus_one',
+              status: 'suggested',
+              explanation:
+                'Fetches user profiles individually for each post in the feed. Batching these into a single query with an IN clause would reduce database round-trips by approximately 90%.',
+              estimatedSavings: { energyKwh: 2.1, waterLiters: 3.8, co2Kg: 0.49 },
+              savingsPercent: 45,
+              currentCode:
+                'for (const post of posts) {\n  const user = await db.query(\n    "SELECT * FROM users WHERE id = ?",\n    [post.userId]\n  );\n  post.author = user;\n}',
+              suggestedCode:
+                'const userIds = posts.map(p => p.userId);\nconst users = await db.query(\n  "SELECT * FROM users WHERE id IN (?)",\n  [userIds]\n);\nconst userMap = new Map(users.map(u => [u.id, u]));\nposts.forEach(p => p.author = userMap.get(p.userId));'
+            }
+          ]
+        },
+        {
+          id: 'f3',
+          name: 'Authentication',
+          sustainabilityTier: 'low',
+          complexityScore: 28,
+          dependencies: [],
+          stats: { energyKwh: 2.3, waterLiters: 4.1, co2Kg: 0.53 },
+          suggestions: []
+        },
+        {
+          id: 'f4',
+          name: 'Real-time Chat',
+          sustainabilityTier: 'high',
+          complexityScore: 72,
+          dependencies: ['f3', 'f5'],
+          stats: { energyKwh: 14.8, waterLiters: 26.6, co2Kg: 3.44 },
+          suggestions: [
+            {
+              id: 's3',
+              featureId: 'f4',
+              patternType: 'sync_blocking',
+              status: 'suggested',
+              explanation:
+                'Uses synchronous file I/O (writeFileSync) to log chat messages, which blocks the Node.js event loop on every message. Switching to async write streams eliminates the blocking and improves throughput.',
+              estimatedSavings: { energyKwh: 5.6, waterLiters: 10.1, co2Kg: 1.31 },
+              savingsPercent: 38,
+              currentCode:
+                'function saveMessage(msg) {\n  fs.writeFileSync(\n    `/logs/${msg.roomId}.log`,\n    JSON.stringify(msg) + "\\n",\n    { flag: "a" }\n  );\n  return { ok: true };\n}',
+              suggestedCode:
+                'async function saveMessage(msg) {\n  const stream = fs.createWriteStream(\n    `/logs/${msg.roomId}.log`,\n    { flags: "a" }\n  );\n  stream.write(JSON.stringify(msg) + "\\n");\n  stream.end();\n  return { ok: true };\n}'
+            }
+          ]
+        },
+        {
+          id: 'f5',
+          name: 'Search Engine',
+          sustainabilityTier: 'medium',
+          complexityScore: 55,
+          dependencies: ['f3'],
+          stats: { energyKwh: 6.8, waterLiters: 12.2, co2Kg: 1.58 },
+          suggestions: [
+            {
+              id: 's4',
+              featureId: 'f5',
+              patternType: 'polling',
+              status: 'suggested',
+              explanation:
+                'Fires a search API call on every keystroke without any debouncing. Adding a 300ms debounce would eliminate roughly 80% of unnecessary API calls.',
+              estimatedSavings: { energyKwh: 2.8, waterLiters: 5.0, co2Kg: 0.65 },
+              savingsPercent: 41,
+              currentCode:
+                'searchInput.addEventListener("input", async (e) => {\n  const results = await searchAPI(e.target.value);\n  renderResults(results);\n});',
+              suggestedCode:
+                'let debounceTimer;\nsearchInput.addEventListener("input", (e) => {\n  clearTimeout(debounceTimer);\n  debounceTimer = setTimeout(async () => {\n    const results = await searchAPI(e.target.value);\n    renderResults(results);\n  }, 300);\n});'
+            }
+          ]
+        },
+        {
+          id: 'f6',
+          name: 'File Upload',
+          sustainabilityTier: 'low',
+          complexityScore: 35,
+          dependencies: ['f3'],
+          stats: { energyKwh: 3.1, waterLiters: 5.6, co2Kg: 0.72 },
+          suggestions: []
+        },
+        {
+          id: 'f7',
+          name: 'Analytics Dashboard',
+          sustainabilityTier: 'medium',
+          complexityScore: 42,
+          dependencies: ['f2', 'f5'],
+          stats: { energyKwh: 5.4, waterLiters: 9.7, co2Kg: 1.26 },
+          suggestions: []
+        }
+      ],
+      totals: { energyKwh: 53.0, waterLiters: 95.1, co2Kg: 12.32 }
+    };
+
+    // ========================================================================
+    // REAL-WORLD IMPACT CONVERSIONS
+    // ========================================================================
+    const IMPACT = {
+      energy: [
+        { icon: '🏠', perUnit: 1/30,  label: (n) => `${n.toFixed(1)} homes powered for a day`, desc: 'Avg US home uses ~30 kWh/day' },
+        { icon: '📱', perUnit: 1/0.012, label: (n) => `${Math.round(n)} smartphone charges`, desc: '~0.012 kWh per full charge' },
+        { icon: '💡', perUnit: 1/0.06, label: (n) => `${Math.round(n)} hours of LED lighting`, desc: '60W-equivalent LED bulb' },
+        { icon: '🚗', perUnit: 1/3.3,  label: (n) => `${n.toFixed(1)} miles of EV driving`, desc: 'Avg EV uses ~3.3 kWh/mile' },
+        { icon: '🧊', perUnit: 1/1.5,  label: (n) => `${n.toFixed(1)} hours of AC`, desc: 'Central AC ~1.5 kWh/hr' },
+      ],
+      water: [
+        { icon: '🚿', perUnit: 1/75,  label: (n) => `${n.toFixed(1)} showers`, desc: 'Avg shower uses ~75 liters' },
+        { icon: '🥤', perUnit: 1/0.5,  label: (n) => `${Math.round(n)} bottles of drinking water`, desc: '500ml standard bottles' },
+        { icon: '🧺', perUnit: 1/50,   label: (n) => `${n.toFixed(1)} loads of laundry`, desc: 'Modern washer ~50 liters/load' },
+        { icon: '🌿', perUnit: 1/6,    label: (n) => `${n.toFixed(1)} days of garden watering`, desc: '~6 liters per day for a small garden' },
+        { icon: '🚰', perUnit: 1/9.5,  label: (n) => `${n.toFixed(1)} toilet flushes`, desc: '~9.5 liters per flush' },
+      ],
+      carbon: [
+        { icon: '🚗', perUnit: 1/0.21,  label: (n) => `${n.toFixed(1)} miles driven`, desc: 'Avg car emits ~0.21 kg CO₂/mi' },
+        { icon: '✈️', perUnit: 1/0.255, label: (n) => `${n.toFixed(1)} miles of flying`, desc: 'Economy class ~0.255 kg CO₂/mi' },
+        { icon: '🌳', perUnit: 1/22,    label: (n) => `${n.toFixed(2)} trees needed for a year`, desc: '1 tree absorbs ~22 kg CO₂/yr' },
+        { icon: '🍔', perUnit: 1/3.6,   label: (n) => `${n.toFixed(1)} cheeseburgers`, desc: '~3.6 kg CO₂ per burger produced' },
+        { icon: '📦', perUnit: 1/0.5,   label: (n) => `${Math.round(n)} Amazon package deliveries`, desc: '~0.5 kg CO₂ per last-mile delivery' },
+      ],
+    };
+
+    function getImpactLine(category, value) {
+      const items = IMPACT[category];
+      if (!items || !items.length) return '';
+      const item = items[0];
+      const converted = value * item.perUnit;
+      return `${item.icon} = ${item.label(converted)}`;
+    }
+
+    function getImpactDetails(category, value) {
+      const items = IMPACT[category];
+      if (!items) return [];
+      return items.map(item => ({
+        icon: item.icon,
+        text: item.label(value * item.perUnit),
+        desc: item.desc
+      }));
+    }
+
+    // ========================================================================
+    // STATE MANAGEMENT
+    // ========================================================================
+    let appState = {
+      selectedFeatureId: null,
+      lastUpdatedTime: new Date(),
+      features: JSON.parse(JSON.stringify(analysis.features)),
+      totals: JSON.parse(JSON.stringify(analysis.totals))
+    };
+
+    // ========================================================================
+    // UTILITY FUNCTIONS
+    // ========================================================================
+
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      const icons = { success: '✓', info: 'ℹ', error: '✕' };
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.innerHTML = `
+        <span>${icons[type]}</span>
+        <span>${message}</span>
+        <button class="toast-close">&times;</button>
+      `;
+
+      toast.querySelector('.toast-close').addEventListener('click', () => {
+        toast.style.animation = 'toastIn 300ms ease reverse';
+        setTimeout(() => toast.remove(), 300);
+      });
+
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.animation = 'toastIn 300ms ease reverse';
+        setTimeout(() => toast.remove(), 300);
+      }, 4000);
+    }
+
+    function formatRelativeTime(date) {
+      const seconds = Math.floor((new Date() - date) / 1000);
+      if (seconds < 60) return 'just now';
+      const minutes = Math.floor(seconds / 60);
+      if (minutes < 60) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+      const hours = Math.floor(minutes / 60);
+      if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+      return 'a while ago';
+    }
+
+    function animateValue(element, startVal, endVal, duration = 500) {
+      const startTime = performance.now();
+      const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
+
+      const animate = (currentTime) => {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const eased = easeOutCubic(progress);
+        const current = startVal + (endVal - startVal) * eased;
+        element.textContent = current.toFixed(1);
+
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        }
+      };
+
+      requestAnimationFrame(animate);
+    }
+
+    function getPatternIcon(patternType) {
+      const icons = {
+        polling: '🔄',
+        n_plus_one: '🗄️',
+        sync_blocking: '⚡'
+      };
+      return icons[patternType] || '💡';
+    }
+
+    function getPatternName(patternType) {
+      const names = {
+        polling: 'Polling',
+        n_plus_one: 'N+1 Queries',
+        sync_blocking: 'Sync Blocking'
+      };
+      return names[patternType] || patternType;
+    }
+
+    // ========================================================================
+    // RENDER FUNCTIONS
+    // ========================================================================
+
+    function updateStatCards() {
+      const energyEl = document.getElementById('energyStat');
+      const waterEl = document.getElementById('waterStat');
+      const carbonEl = document.getElementById('carbonStat');
+
+      const currentEnergy = parseFloat(energyEl.textContent) || 0;
+      const currentWater = parseFloat(waterEl.textContent) || 0;
+      const currentCarbon = parseFloat(carbonEl.textContent) || 0;
+
+      animateValue(energyEl, currentEnergy, appState.totals.energyKwh);
+      animateValue(waterEl, currentWater, appState.totals.waterLiters);
+      animateValue(carbonEl, currentCarbon, appState.totals.co2Kg);
+
+      // Update impact comparisons
+      document.getElementById('energyImpact').textContent = getImpactLine('energy', appState.totals.energyKwh);
+      document.getElementById('waterImpact').textContent = getImpactLine('water', appState.totals.waterLiters);
+      document.getElementById('carbonImpact').textContent = getImpactLine('carbon', appState.totals.co2Kg);
+    }
+
+    function renderFeatureList() {
+      const container = document.getElementById('featureList');
+      container.innerHTML = '';
+
+      // Sort features: by tier (high, medium, low), then by energy descending
+      const tierOrder = { high: 0, medium: 1, low: 2 };
+      const sorted = [...appState.features].sort((a, b) => {
+        if (tierOrder[a.sustainabilityTier] !== tierOrder[b.sustainabilityTier]) {
+          return tierOrder[a.sustainabilityTier] - tierOrder[b.sustainabilityTier];
+        }
+        return b.stats.energyKwh - a.stats.energyKwh;
+      });
+
+      sorted.forEach((feature) => {
+        const pendingSuggestions = feature.suggestions.filter(
+          (s) => s.status === 'suggested'
+        );
+
+        const row = document.createElement('div');
+        row.className = 'feature-row';
+        if (appState.selectedFeatureId === feature.id) {
+          row.classList.add('selected');
+        }
+
+        row.innerHTML = `
+          <div class="feature-name">${feature.name}</div>
+          <div class="feature-meta">
+            <span class="tier-badge ${feature.sustainabilityTier}">${feature.sustainabilityTier.toUpperCase()}</span>
+            ${pendingSuggestions.length > 0 ? `<span class="feature-suggestion">💡 ${pendingSuggestions.length}</span>` : ''}
+          </div>
+          <div class="feature-stats">
+            <span>⚡ ${feature.stats.energyKwh}</span>
+            <span>💧 ${feature.stats.waterLiters}</span>
+            <span>🏭 ${feature.stats.co2Kg}</span>
+          </div>
+        `;
+
+        row.addEventListener('click', () => {
+          appState.selectedFeatureId = feature.id;
+          renderFeatureList();
+          forceSimulation.focusNode = graphState.nodes.find((n) => n.id === feature.id);
+          renderGraph();
+        });
+
+        container.appendChild(row);
+      });
+    }
+
+    function renderPendingSuggestions() {
+      const container = document.getElementById('pendingSuggestions');
+      container.innerHTML = '';
+
+      const allSuggestions = appState.features
+        .flatMap((f) => f.suggestions.map((s) => ({ ...s, featureName: f.name })))
+        .filter((s) => s.status === 'suggested');
+
+      if (allSuggestions.length === 0) {
+        container.innerHTML = `
+          <div style="text-align: center; color: #94a3b8; padding: 40px 0; font-size: 0.875rem;">
+            ✓ All optimizations applied!
+          </div>
+        `;
+        return;
+      }
+
+      // Group by pattern type
+      const patternGroups = {};
+      allSuggestions.forEach((s) => {
+        if (!patternGroups[s.patternType]) patternGroups[s.patternType] = [];
+        patternGroups[s.patternType].push(s);
+      });
+
+      Object.entries(patternGroups).forEach(([patternType, suggestions]) => {
+        const group = document.createElement('div');
+        group.className = 'suggestion-group';
+        group.innerHTML = `<div class="suggestion-group-header">${getPatternIcon(patternType)} ${getPatternName(patternType)} (${suggestions.length})</div>`;
+
+        suggestions.forEach((suggestion) => {
+          const card = document.createElement('div');
+          card.className = 'suggestion-card';
+          const sEnergy = suggestion.estimatedSavings.energyKwh;
+          const sWater = suggestion.estimatedSavings.waterLiters;
+          const sCo2 = suggestion.estimatedSavings.co2Kg;
+          const energyImpacts = getImpactDetails('energy', sEnergy);
+          const waterImpacts = getImpactDetails('water', sWater);
+          const carbonImpacts = getImpactDetails('carbon', sCo2);
+
+          card.innerHTML = `
+            <div class="suggestion-feature">${suggestion.featureName} → "Greener ${suggestion.featureName}"  <span style="color:#22c55e;font-weight:700">−${suggestion.savingsPercent}% energy</span></div>
+            <div class="suggestion-explanation">${suggestion.explanation.substring(0, 120)}...</div>
+            <div class="impact-grid">
+              <div class="impact-row">${energyImpacts[1] ? energyImpacts[1].icon + ' ' + energyImpacts[1].text : ''}</div>
+              <div class="impact-row">${waterImpacts[1] ? waterImpacts[1].icon + ' ' + waterImpacts[1].text : ''}</div>
+              <div class="impact-row">${carbonImpacts[0] ? carbonImpacts[0].icon + ' ' + carbonImpacts[0].text : ''}</div>
+            </div>
+            <div class="suggestion-actions">
+              <button class="btn btn-primary apply-btn">Apply</button>
+              <button class="btn btn-secondary dismiss-btn">Dismiss</button>
+            </div>
+          `;
+
+          card.querySelector('.apply-btn').addEventListener('click', () => {
+            applySuggestion(suggestion.id);
+          });
+
+          card.querySelector('.dismiss-btn').addEventListener('click', () => {
+            dismissSuggestion(suggestion.id);
+          });
+
+          card.querySelector('.suggestion-explanation').addEventListener('click', () => {
+            openSuggestionModal(suggestion.id);
+          });
+
+          group.appendChild(card);
+        });
+
+        container.appendChild(group);
+      });
+    }
+
+    function renderHistorySuggestions() {
+      const container = document.getElementById('historySuggestions');
+      container.innerHTML = '';
+
+      const allSuggestions = appState.features
+        .flatMap((f) => f.suggestions.map((s) => ({ ...s, featureName: f.name })))
+        .filter((s) => s.status !== 'suggested')
+        .sort((a, b) => new Date(b.appliedAt || b.dismissedAt) - new Date(a.appliedAt || a.dismissedAt));
+
+      if (allSuggestions.length === 0) {
+        container.innerHTML = `
+          <div style="text-align: center; color: #94a3b8; padding: 40px 0; font-size: 0.875rem;">
+            No suggestions applied or dismissed yet.
+          </div>
+        `;
+        return;
+      }
+
+      // Calculate total savings
+      const appliedSuggestions = allSuggestions.filter((s) => s.status === 'applied');
+      const totalSavings = appliedSuggestions.reduce(
+        (acc, s) => ({
+          energyKwh: acc.energyKwh + s.estimatedSavings.energyKwh,
+          waterLiters: acc.waterLiters + s.estimatedSavings.waterLiters,
+          co2Kg: acc.co2Kg + s.estimatedSavings.co2Kg
+        }),
+        { energyKwh: 0, waterLiters: 0, co2Kg: 0 }
+      );
+
+      if (appliedSuggestions.length > 0) {
+        const banner = document.createElement('div');
+        banner.className = 'history-banner';
+        banner.innerHTML = `
+          🌿 Total savings to date: ⚡ ${totalSavings.energyKwh.toFixed(1)} kWh  💧 ${totalSavings.waterLiters.toFixed(1)} L  🏭 ${totalSavings.co2Kg.toFixed(2)} kg CO₂
+        `;
+        container.appendChild(banner);
+      }
+
+      allSuggestions.forEach((suggestion) => {
+        const entry = document.createElement('div');
+        entry.className = `history-entry ${suggestion.status}`;
+
+        const timeStr = suggestion.status === 'applied'
+          ? formatRelativeTime(new Date(suggestion.appliedAt))
+          : 'Dismissed';
+
+        entry.innerHTML = `
+          <div>${suggestion.status === 'applied' ? '✓' : '✕'} ${suggestion.featureName} · ${getPatternName(suggestion.patternType)} · ${timeStr}</div>
+          ${suggestion.status === 'applied'
+            ? `<div class="history-entry-savings">Saved: ⚡ ${suggestion.estimatedSavings.energyKwh}  💧 ${suggestion.estimatedSavings.waterLiters}  🏭 ${suggestion.estimatedSavings.co2Kg}</div>`
+            : ''}
+        `;
+
+        container.appendChild(entry);
+      });
+    }
+
+    function applySuggestion(suggestionId) {
+      for (let feature of appState.features) {
+        const suggestion = feature.suggestions.find((s) => s.id === suggestionId);
+        if (suggestion) {
+          suggestion.status = 'applied';
+          suggestion.appliedAt = new Date().toISOString();
+
+          // Subtract savings from feature stats
+          feature.stats.energyKwh -= suggestion.estimatedSavings.energyKwh;
+          feature.stats.waterLiters -= suggestion.estimatedSavings.waterLiters;
+          feature.stats.co2Kg -= suggestion.estimatedSavings.co2Kg;
+
+          // Recalculate totals
+          appState.totals = appState.features.reduce(
+            (acc, f) => ({
+              energyKwh: acc.energyKwh + f.stats.energyKwh,
+              waterLiters: acc.waterLiters + f.stats.waterLiters,
+              co2Kg: acc.co2Kg + f.stats.co2Kg
+            }),
+            { energyKwh: 0, waterLiters: 0, co2Kg: 0 }
+          );
+
+          updateStatCards();
+          renderFeatureList();
+          renderGraph();
+          renderPendingSuggestions();
+          renderHistorySuggestions();
+
+          showToast(`✓ Suggestion applied — ${feature.name}`, 'success');
+          break;
+        }
+      }
+    }
+
+    function dismissSuggestion(suggestionId) {
+      for (let feature of appState.features) {
+        const suggestion = feature.suggestions.find((s) => s.id === suggestionId);
+        if (suggestion) {
+          suggestion.status = 'dismissed';
+          suggestion.dismissedAt = new Date().toISOString();
+          renderPendingSuggestions();
+          renderHistorySuggestions();
+          showToast('Suggestion dismissed', 'info');
+          break;
+        }
+      }
+    }
+
+    // ========================================================================
+    // MODAL
+    // ========================================================================
+
+    function openSuggestionModal(suggestionId) {
+      for (let feature of appState.features) {
+        const suggestion = feature.suggestions.find((s) => s.id === suggestionId);
+        if (suggestion) {
+          const modal = document.getElementById('modalOverlay');
+          modal.classList.add('active');
+
+          document.getElementById('modalTitle').textContent = `${getPatternIcon(suggestion.patternType)} ${getPatternName(suggestion.patternType)} detected in ${feature.name}`;
+          document.getElementById('modalExplanation').textContent = suggestion.explanation;
+          document.getElementById('modalCurrentCode').textContent = suggestion.currentCode;
+          document.getElementById('modalSuggestedCode').textContent = suggestion.suggestedCode;
+          document.getElementById('modalSavings').innerHTML = `
+            ⚡ −${suggestion.estimatedSavings.energyKwh.toFixed(1)} kWh/month
+            💧 −${suggestion.estimatedSavings.waterLiters.toFixed(1)} L/month
+            🏭 −${suggestion.estimatedSavings.co2Kg.toFixed(2)} kg CO₂/month
+          `;
+
+          document.getElementById('modalApply').onclick = () => {
+            applySuggestion(suggestionId);
+            modal.classList.remove('active');
+          };
+
+          document.getElementById('modalDismiss').onclick = () => {
+            dismissSuggestion(suggestionId);
+            modal.classList.remove('active');
+          };
+
+          document.getElementById('modalCancel').onclick = () => {
+            modal.classList.remove('active');
+          };
+
+          document.getElementById('modalClose').onclick = () => {
+            modal.classList.remove('active');
+          };
+
+          break;
+        }
+      }
+    }
+
+    // ========================================================================
+    // FORCE-DIRECTED GRAPH (Vanilla Implementation)
+    // ========================================================================
+
+    let graphState = {
+      nodes: [],
+      edges: [],
+      simulation: null,
+      selectedNode: null
+    };
+
+    let forceSimulation = {
+      alpha: 1,
+      alphaDecay: 0.02,
+      alphaMin: 0.001,
+      centerStrength: 0.05,
+      chargeStrength: -300,
+      linkDistance: 120,
+      focusNode: null
+    };
+
+    function initializeGraph() {
+      // Create nodes for features
+      graphState.nodes = appState.features.map((feature) => ({
+        id: feature.id,
+        name: feature.name,
+        tier: feature.sustainabilityTier,
+        complexity: feature.complexityScore,
+        x: Math.random() * 400 - 200,
+        y: Math.random() * 400 - 200,
+        vx: 0,
+        vy: 0,
+        type: 'feature'
+      }));
+
+      // Create nodes for suggestions (ghost nodes)
+      appState.features.forEach((feature) => {
+        feature.suggestions.forEach((suggestion) => {
+          if (suggestion.status === 'suggested') {
+            const parentNode = graphState.nodes.find((n) => n.id === feature.id);
+            graphState.nodes.push({
+              id: `ghost-${suggestion.id}`,
+              parentId: feature.id,
+              patternType: suggestion.patternType,
+              savingsPercent: suggestion.savingsPercent,
+              x: (parentNode?.x || 0) + Math.random() * 40 - 20,
+              y: (parentNode?.y || 0) + Math.random() * 40 - 20,
+              vx: 0,
+              vy: 0,
+              type: 'ghost'
+            });
+          }
+        });
+      });
+
+      // Create edges for dependencies
+      graphState.edges = [];
+      appState.features.forEach((feature) => {
+        feature.dependencies.forEach((depId) => {
+          graphState.edges.push({
+            source: feature.id,
+            target: depId,
+            type: 'dependency'
+          });
+        });
+      });
+
+      // Create edges for ghost nodes
+      graphState.nodes.forEach((node) => {
+        if (node.type === 'ghost') {
+          graphState.edges.push({
+            source: node.parentId,
+            target: node.id,
+            type: 'suggestion',
+            distance: 60
+          });
+        }
+      });
+    }
+
+    function getNodeRadius(complexity) {
+      return 20 + ((complexity - 1) / 99) * 30;
+    }
+
+    function getNodeColor(tier) {
+      const colors = {
+        high: '#ef4444',
+        medium: '#eab308',
+        low: '#22c55e'
+      };
+      return colors[tier] || '#64748b';
+    }
+
+    function simulationTick() {
+      const canvas = document.getElementById('canvas');
+      const width = canvas.width;
+      const height = canvas.height;
+
+      // Center gravity
+      graphState.nodes.forEach((node) => {
+        const dx = -node.x * forceSimulation.centerStrength;
+        const dy = -node.y * forceSimulation.centerStrength;
+        node.vx += dx;
+        node.vy += dy;
+      });
+
+      // Charge repulsion
+      for (let i = 0; i < graphState.nodes.length; i++) {
+        for (let j = i + 1; j < graphState.nodes.length; j++) {
+          const a = graphState.nodes[i];
+          const b = graphState.nodes[j];
+          const dx = b.x - a.x;
+          const dy = b.y - a.y;
+          const dist = Math.hypot(dx, dy) || 1;
+
+          const strength =
+            (a.type === 'ghost' ? -30 : forceSimulation.chargeStrength) /
+            (dist * dist);
+          const fx = (dx / dist) * strength;
+          const fy = (dy / dist) * strength;
+
+          a.vx -= fx;
+          a.vy -= fy;
+          b.vx += fx;
+          b.vy += fy;
+        }
+      }
+
+      // Link forces
+      graphState.edges.forEach((edge) => {
+        const source = graphState.nodes.find((n) => n.id === edge.source);
+        const target = graphState.nodes.find((n) => n.id === edge.target);
+        if (!source || !target) return;
+
+        const dx = target.x - source.x;
+        const dy = target.y - source.y;
+        const dist = Math.hypot(dx, dy) || 1;
+        const desiredDist = edge.distance || forceSimulation.linkDistance;
+        const force = (dist - desiredDist) * 0.05;
+
+        const fx = (dx / dist) * force;
+        const fy = (dy / dist) * force;
+
+        source.vx += fx;
+        source.vy += fy;
+        target.vx -= fx;
+        target.vy -= fy;
+      });
+
+      // Update positions
+      graphState.nodes.forEach((node) => {
+        node.x += node.vx;
+        node.y += node.vy;
+        node.vx *= 0.95;
+        node.vy *= 0.95;
+
+        // Collision detection
+        const radius = getNodeRadius(node.complexity || 20);
+        if (node.x - radius < -width / 2) {
+          node.x = -width / 2 + radius;
+          node.vx *= -0.5;
+        }
+        if (node.x + radius > width / 2) {
+          node.x = width / 2 - radius;
+          node.vx *= -0.5;
+        }
+        if (node.y - radius < -height / 2) {
+          node.y = -height / 2 + radius;
+          node.vy *= -0.5;
+        }
+        if (node.y + radius > height / 2) {
+          node.y = height / 2 - radius;
+          node.vy *= -0.5;
+        }
+      });
+
+      // Cool down
+      forceSimulation.alpha *= 1 - forceSimulation.alphaDecay;
+      if (forceSimulation.alpha < forceSimulation.alphaMin) {
+        forceSimulation.alpha = forceSimulation.alphaMin;
+      }
+    }
+
+    function renderGraph() {
+      const canvas = document.getElementById('canvas');
+      const ctx = canvas.getContext('2d');
+
+      // Clear canvas
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Save context for transforms
+      ctx.save();
+      ctx.translate(canvas.width / 2, canvas.height / 2);
+
+      // Draw edges
+      ctx.strokeStyle = 'rgba(71, 85, 105, 0.4)';
+      ctx.lineWidth = 1.5;
+      graphState.edges.forEach((edge) => {
+        const source = graphState.nodes.find((n) => n.id === edge.source);
+        const target = graphState.nodes.find((n) => n.id === edge.target);
+        if (!source || !target) return;
+
+        ctx.beginPath();
+        ctx.moveTo(source.x, source.y);
+        ctx.lineTo(target.x, target.y);
+
+        if (edge.type === 'suggestion') {
+          ctx.setLineDash([5, 5]);
+        } else {
+          ctx.setLineDash([]);
+        }
+
+        ctx.stroke();
+      });
+
+      ctx.setLineDash([]);
+
+      // Draw nodes
+      graphState.nodes.forEach((node) => {
+        const radius = getNodeRadius(node.complexity || 20);
+        ctx.fillStyle = node.type === 'ghost'
+          ? 'rgba(209, 250, 229, 0.45)'
+          : getNodeColor(node.tier);
+        ctx.beginPath();
+        ctx.arc(node.x, node.y, radius, 0, Math.PI * 2);
+
+        if (node.type === 'ghost') {
+          ctx.strokeStyle = '#22c55e';
+          ctx.lineWidth = 2;
+          ctx.setLineDash([4, 4]);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+
+        ctx.fill();
+
+        // Node highlight for selected
+        if (appState.selectedFeatureId === node.id) {
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 3;
+          ctx.stroke();
+        }
+
+        // Draw label
+        ctx.fillStyle = node.type === 'ghost' ? '#0f172a' : '#f8fafc';
+        ctx.font = 'bold 12px -apple-system, BlinkMacSystemFont, Segoe UI, Roboto';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        let label = node.type === 'ghost'
+          ? `${getPatternIcon(node.patternType)} −${node.savingsPercent}%`
+          : node.name.length > 15
+          ? node.name.substring(0, 12) + '...'
+          : node.name;
+
+        ctx.fillText(label, node.x, node.y);
+      });
+
+      ctx.restore();
+    }
+
+    function animateGraph() {
+      simulationTick();
+      renderGraph();
+      requestAnimationFrame(animateGraph);
+    }
+
+    // ========================================================================
+    // CANVAS SETUP & INTERACTIONS
+    // ========================================================================
+
+    function setupCanvas() {
+      const canvas = document.getElementById('canvas');
+      const container = canvas.parentElement;
+
+      function resizeCanvas() {
+        canvas.width = container.clientWidth;
+        canvas.height = container.clientHeight;
+      }
+
+      resizeCanvas();
+      window.addEventListener('resize', resizeCanvas);
+
+      // Click interactions
+      let hoveredNode = null;
+      let hoveredGhostData = null;
+
+      canvas.addEventListener('mousemove', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left - canvas.width / 2;
+        const y = e.clientY - rect.top - canvas.height / 2;
+
+        hoveredNode = null;
+        hoveredGhostData = null;
+
+        // Check if hovering over ghost nodes
+        for (let node of graphState.nodes) {
+          if (node.type === 'ghost') {
+            const radius = getNodeRadius(20);
+            const dist = Math.hypot(x - node.x, y - node.y);
+            if (dist < radius) {
+              hoveredGhostData = node;
+              canvas.style.cursor = 'pointer';
+              return;
+            }
+          }
+        }
+
+        // Check if hovering over feature nodes
+        for (let node of graphState.nodes) {
+          if (node.type === 'feature') {
+            const radius = getNodeRadius(node.complexity);
+            const dist = Math.hypot(x - node.x, y - node.y);
+            if (dist < radius) {
+              hoveredNode = node;
+              canvas.style.cursor = 'pointer';
+              return;
+            }
+          }
+        }
+
+        canvas.style.cursor = 'grab';
+      });
+
+      canvas.addEventListener('click', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left - canvas.width / 2;
+        const y = e.clientY - rect.top - canvas.height / 2;
+
+        // Check ghost nodes first
+        for (let node of graphState.nodes) {
+          if (node.type === 'ghost') {
+            const radius = getNodeRadius(20);
+            const dist = Math.hypot(x - node.x, y - node.y);
+            if (dist < radius) {
+              // Find the suggestion
+              for (let feature of appState.features) {
+                const suggestion = feature.suggestions.find(
+                  (s) => `ghost-${s.id}` === node.id
+                );
+                if (suggestion) {
+                  openSuggestionModal(suggestion.id);
+                  return;
+                }
+              }
+            }
+          }
+        }
+
+        // Check feature nodes
+        for (let node of graphState.nodes) {
+          if (node.type === 'feature') {
+            const radius = getNodeRadius(node.complexity);
+            const dist = Math.hypot(x - node.x, y - node.y);
+            if (dist < radius) {
+              appState.selectedFeatureId = node.id;
+              renderFeatureList();
+              renderGraph();
+              return;
+            }
+          }
+        }
+
+        // Deselect if clicking empty space
+        appState.selectedFeatureId = null;
+        renderFeatureList();
+        renderGraph();
+      });
+    }
+
+    // ========================================================================
+    // HEADER INTERACTIONS
+    // ========================================================================
+
+    function setupHeader() {
+      const reanalyzeBtn = document.getElementById('reanalyzeBtn');
+      const lastUpdated = document.getElementById('lastUpdated');
+
+      reanalyzeBtn.addEventListener('click', () => {
+        showToast('Re-analysis started...', 'info');
+        const overlay = document.getElementById('canvasOverlay');
+        overlay.classList.add('active');
+
+        setTimeout(() => {
+          overlay.classList.remove('active');
+        }, 3000);
+      });
+
+      // Update relative time every 30 seconds
+      setInterval(() => {
+        lastUpdated.textContent = formatRelativeTime(appState.lastUpdatedTime);
+      }, 30000);
+    }
+
+    // ========================================================================
+    // TABS
+    // ========================================================================
+
+    function setupTabs() {
+      const tabButtons = document.querySelectorAll('.tab-button');
+      const tabContents = document.querySelectorAll('.tab-content');
+
+      tabButtons.forEach((button) => {
+        button.addEventListener('click', () => {
+          const tabName = button.dataset.tab;
+
+          tabButtons.forEach((btn) => btn.classList.remove('active'));
+          tabContents.forEach((content) => content.classList.remove('active'));
+
+          button.classList.add('active');
+          document.getElementById(`${tabName}Tab`).classList.add('active');
+        });
+      });
+    }
+
+    // ========================================================================
+    // MODAL ESCAPE KEY
+    // ========================================================================
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        const modal = document.getElementById('modalOverlay');
+        if (modal.classList.contains('active')) {
+          modal.classList.remove('active');
+        }
+      }
+    });
+
+    document.getElementById('modalOverlay').addEventListener('click', (e) => {
+      if (e.target.id === 'modalOverlay') {
+        e.target.classList.remove('active');
+      }
+    });
+
+    // ========================================================================
+    // INITIALIZATION
+    // ========================================================================
+
+    function init() {
+      updateStatCards();
+      renderFeatureList();
+      renderPendingSuggestions();
+      renderHistorySuggestions();
+
+      initializeGraph();
+      setupCanvas();
+      animateGraph();
+
+      setupHeader();
+      setupTabs();
+    }
+
+    // Start when DOM is ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+  </script>
+</body>
+</html>
