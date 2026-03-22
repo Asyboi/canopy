@@ -1,13 +1,20 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { getResults, applySuggestion, markApplied, dismissSuggestion } from './api';
-import { CanopyGraphPanel } from './graphPanel';
 import { CanopySidebarProvider } from './sidebar';
+import { Feature, AnalysisResult } from './types';
 
 let sidebarRef: CanopySidebarProvider | undefined;
 
 export function setSidebarRef(sidebar: CanopySidebarProvider) {
   sidebarRef = sidebar;
+}
+
+type StatusBarUpdater = (features: Feature[], totals: AnalysisResult['totals']) => void;
+let updateStatusBarRef: StatusBarUpdater | undefined;
+
+export function setUpdateStatusBarRef(fn: StatusBarUpdater) {
+  updateStatusBarRef = fn;
 }
 
 export class CanopyDiffPanel {
@@ -71,12 +78,9 @@ export class CanopyDiffPanel {
           if (success) {
             await markApplied(baseUrl, workspacePath, featureId, suggestionId);
 
-            // Refresh sidebar and graph from updated results (no re-analysis needed)
             const updatedResults = await getResults(baseUrl, workspacePath);
             sidebarRef?.refresh(updatedResults.features);
-            CanopyGraphPanel.currentPanel?.postMessage({
-              type: 'suggestionApplied', featureId, suggestionId,
-            });
+            updateStatusBarRef?.(updatedResults.features, updatedResults.totals);
 
             panel.dispose();
           } else {
@@ -91,12 +95,9 @@ export class CanopyDiffPanel {
         try {
           await dismissSuggestion(baseUrl, workspacePath, featureId, suggestionId);
 
-          // Refresh sidebar and graph from updated results
           const updatedResults = await getResults(baseUrl, workspacePath);
           sidebarRef?.refresh(updatedResults.features);
-          CanopyGraphPanel.currentPanel?.postMessage({
-            type: 'suggestionDismissed', featureId, suggestionId,
-          });
+          updateStatusBarRef?.(updatedResults.features, updatedResults.totals);
 
           panel.dispose();
         } catch (err) {

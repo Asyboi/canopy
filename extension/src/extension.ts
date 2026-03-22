@@ -2,8 +2,10 @@ import * as vscode from 'vscode';
 import { ensureServerRunning, stopServer } from './server';
 import { triggerAnalysis, getResults, openAnalyzeStream } from './api';
 import { CanopySidebarProvider } from './sidebar';
-import { CanopyGraphPanel } from './graphPanel';
-import { setSidebarRef } from './diffPanel';
+import { CanopyDiffPanel, setSidebarRef, setUpdateStatusBarRef } from './diffPanel';
+import { Feature, AnalysisResult } from './types';
+
+let currentFeatures: Feature[] = [];
 
 export async function activate(context: vscode.ExtensionContext) {
   // 1. Guard: check workspace is open
@@ -24,19 +26,49 @@ export async function activate(context: vscode.ExtensionContext) {
   }
 
   // 3. Register sidebar
-  const sidebarProvider = new CanopySidebarProvider(baseUrl, workspacePath);
+  const sidebarProvider = new CanopySidebarProvider();
   setSidebarRef(sidebarProvider);
   context.subscriptions.push(
     vscode.window.registerTreeDataProvider('canopy.features', sidebarProvider)
   );
 
-  // 4. Register commands
+  // 4. Status bar item
+  const sciStatusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
+  sciStatusBar.command = 'canopy.openDashboard';
+  sciStatusBar.tooltip = 'Canopy: Average SCI score across all features — click to open dashboard';
+  context.subscriptions.push(sciStatusBar);
+
+  function updateStatusBar(features: Feature[], totals: AnalysisResult['totals']) {
+    const avgSci = totals.sci.averageScore.toFixed(0);
+    const highCount = features.filter(f => f.sustainabilityTier === 'high').length;
+    sciStatusBar.text = highCount > 0
+      ? `🌿 SCI: ${avgSci} gCO2  ⚠️ ${highCount} high impact`
+      : `🌿 SCI: ${avgSci} gCO2  ✅ all clear`;
+    sciStatusBar.backgroundColor = highCount > 0
+      ? new vscode.ThemeColor('statusBarItem.warningBackground')
+      : undefined;
+    sciStatusBar.show();
+  }
+
+  setUpdateStatusBarRef(updateStatusBar);
+
+  // 5. Register commands
   context.subscriptions.push(
-    vscode.commands.registerCommand('canopy.openGraph', (featureId?: string) => {
-      CanopyGraphPanel.createOrShow(context.extensionUri, baseUrl, workspacePath, featureId);
+    vscode.commands.registerCommand('canopy.openDiff', (featureId: string, suggestionId: string) => {
+      CanopyDiffPanel.createOrShow(context.extensionUri, baseUrl, workspacePath, featureId, suggestionId);
+    }),
+    vscode.commands.registerCommand('canopy.showFeatureInfo', (featureId: string) => {
+      const feature = currentFeatures.find(f => f.id === featureId);
+      if (!feature) { return; }
+      vscode.window.showInformationMessage(
+        `${feature.name} — ⚡ ${feature.sustainability.electricityKwh.toFixed(1)} kWh/month  ` +
+        `🌱 ${feature.sustainability.carbonKgCo2e.toFixed(2)} kg CO₂e/month  ` +
+        `SCI: ${feature.sustainability.sci.score.toFixed(1)} ${feature.sustainability.sci.unit}  ` +
+        `— No suggestions available.`
+      );
     }),
     vscode.commands.registerCommand('canopy.reanalyze', () =>
-      runAnalysis(baseUrl, workspacePath, sidebarProvider)
+      runAnalysis(baseUrl, workspacePath, sidebarProvider, updateStatusBar)
     ),
     vscode.commands.registerCommand('canopy.openDashboard', () => {
       const url = `${baseUrl}/dashboard?workspacePath=${encodeURIComponent(workspacePath)}`;
@@ -44,10 +76,10 @@ export async function activate(context: vscode.ExtensionContext) {
     })
   );
 
-  // 5. Run initial analysis
-  await runAnalysis(baseUrl, workspacePath, sidebarProvider);
+  // 6. Run initial analysis
+  await runAnalysis(baseUrl, workspacePath, sidebarProvider, updateStatusBar);
 
-  // 6. Watch for file saves — debounce re-analysis prompt
+  // 7. Watch for file saves — debounce re-analysis prompt
   let debounceTimer: NodeJS.Timeout | undefined;
   context.subscriptions.push(
     vscode.workspace.onDidSaveTextDocument(() => {
@@ -66,34 +98,42 @@ export async function activate(context: vscode.ExtensionContext) {
 async function runAnalysis(
   baseUrl: string,
   workspacePath: string,
-  sidebar: CanopySidebarProvider
+  sidebar: CanopySidebarProvider,
+  updateStatusBar: (features: Feature[], totals: AnalysisResult['totals']) => void
 ) {
+  sidebar.setAnalyzing();
+
   const eventSource = openAnalyzeStream(baseUrl, workspacePath);
 
   await vscode.window.withProgress(
-    { location: vscode.ProgressLocation.Notification, title: 'Canopy', cancellable: false },
+    { location: vscode.ProgressLocation.Notification, title: '🌿 Canopy', cancellable: false },
     async (progress) => {
       return new Promise<void>((resolve, reject) => {
         eventSource.addEventListener('progress', (e: any) => {
-          const data = JSON.parse(e.data);
-          progress.report({ message: data.message, increment: data.percent });
+          const data: { step: number; message: string; percent: number } = JSON.parse(e.data);
+          progress.report({ message: data.message, increment: data.percent / 7 });
+          sidebar.updateScanProgress(data.step, data.message, data.percent);
         });
 
         eventSource.addEventListener('complete', async () => {
           eventSource.close();
           try {
             const results = await getResults(baseUrl, workspacePath);
+            currentFeatures = results.features;
             sidebar.refresh(results.features);
-            CanopyGraphPanel.update(results.features);
+            updateStatusBar(results.features, results.totals);
             resolve();
           } catch (err) {
+            sidebar.setError('Failed to load results');
             reject(err);
           }
         });
 
-        eventSource.addEventListener('error', () => {
+        eventSource.addEventListener('error', (e: any) => {
           eventSource.close();
-          reject(new Error('Analysis failed'));
+          const msg = e.data ? JSON.parse(e.data).message : 'Unknown error';
+          sidebar.setError(msg);
+          reject(new Error(msg));
         });
 
         // Trigger analysis after SSE is listening

@@ -31,18 +31,38 @@
     },
     "commands": [
       {
-        "command": "canopy.openGraph",
-        "title": "Canopy: Open Graph"
-      },
-      {
         "command": "canopy.reanalyze",
-        "title": "Canopy: Re-analyze Workspace"
+        "title": "Canopy: Re-analyze Workspace",
+        "icon": "$(sync)"
       },
       {
         "command": "canopy.openDashboard",
-        "title": "Canopy: Open Web Dashboard"
+        "title": "Canopy: Open Web Dashboard",
+        "icon": "$(globe)"
+      },
+      {
+        "command": "canopy.openDiff",
+        "title": "Canopy: View Suggestion"
+      },
+      {
+        "command": "canopy.showFeatureInfo",
+        "title": "Canopy: Show Feature Info"
       }
-    ]
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "canopy.reanalyze",
+          "when": "view == canopy.features",
+          "group": "navigation"
+        },
+        {
+          "command": "canopy.openDashboard",
+          "when": "view == canopy.features",
+          "group": "navigation"
+        }
+      ]
+    }
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
@@ -50,11 +70,9 @@
     "package": "vsce package"
   },
   "dependencies": {
-    "d3": "^7.9.0",
     "eventsource": "^2.0.2"
   },
   "devDependencies": {
-    "@types/d3": "^7.4.0",
     "@types/eventsource": "^1.1.15",
     "@types/node": "^20.0.0",
     "@types/vscode": "^1.85.0",
