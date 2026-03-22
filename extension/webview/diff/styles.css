@@ -28,14 +28,14 @@ body {
   color: var(--vscode-badge-foreground, #fff);
   padding: 2px 8px;
   border-radius: 4px;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 600;
   text-transform: uppercase;
   flex-shrink: 0;
 }
 
 .explanation {
-  font-size: 13px;
+  font-size: 16px;
   opacity: 0.85;
 }
 
@@ -59,7 +59,7 @@ body {
 
 .pane-header {
   padding: 8px 16px;
-  font-size: 12px;
+  font-size: 15px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -107,7 +107,7 @@ body {
 }
 
 .savings {
-  font-size: 12px;
+  font-size: 15px;
   opacity: 0.8;
 }
 
@@ -120,7 +120,7 @@ body {
   padding: 6px 16px;
   border: none;
   border-radius: 4px;
-  font-size: 13px;
+  font-size: 16px;
   cursor: pointer;
   font-family: inherit;
 }

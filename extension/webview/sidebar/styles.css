@@ -5,12 +5,12 @@
 }
 
 :root {
-  --bg:        #0b1a0d;
-  --bg-hover:  #132116;
-  --bg-active: #182e1c;
-  --divider:   #1b3020;
-  --text:      #c8d8c9;
-  --text-dim:  #567059;
+  --bg:        var(--vscode-sideBar-background, #1e1e1e);
+  --bg-hover:  var(--vscode-list-hoverBackground, #2a2d2e);
+  --bg-active: var(--vscode-list-activeSelectionBackground, #094771);
+  --divider:   var(--vscode-panel-border, #333);
+  --text:      var(--vscode-foreground, #cccccc);
+  --text-dim:  var(--vscode-descriptionForeground, #717171);
   --red:       #e05252;
   --orange:    #d97b30;
   --yellow:    #c9b440;
@@ -27,7 +27,7 @@ html, body {
   background: var(--bg);
   color: var(--text);
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: 15px;
   line-height: 1.4;
   min-height: 100vh;
   overflow-x: hidden;
@@ -42,16 +42,16 @@ html, body {
 }
 
 .panel-title {
-  font-size: 11.5px;
+  font-size: 14.5px;
   font-weight: 600;
   letter-spacing: 0.14em;
-  color: #9abf9c;
+  color: var(--text-dim);
   text-transform: uppercase;
 }
 
 .panel-meta {
   margin-top: 5px;
-  font-size: 10.5px;
+  font-size: 13.5px;
   letter-spacing: 0.09em;
   color: var(--text-dim);
   text-transform: uppercase;
@@ -68,7 +68,7 @@ html, body {
   border: none;
   border-bottom: 2px solid transparent;
   color: var(--text-dim);
-  font-size: 13px;
+  font-size: 15px;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -117,8 +117,8 @@ html, body {
 
 .feature-name {
   flex: 1;
-  font-size: 12.5px;
-  color: #d4e6d5;
+  font-size: 15.5px;
+  color: var(--text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -135,7 +135,7 @@ html, body {
 .issue-badge {
   background: var(--teal);
   color: #fff;
-  font-size: 8.5px;
+  font-size: 11.5px;
   font-weight: 700;
   width: 16px;
   height: 16px;
@@ -148,13 +148,13 @@ html, body {
 }
 
 .co2 {
-  font-size: 11.5px;
+  font-size: 14.5px;
   letter-spacing: 0.01em;
   white-space: nowrap;
 }
 
 .co2 sup {
-  font-size: 7px;
+  font-size: 10px;
 }
 
 .co2-high { color: var(--co2-high); }
@@ -190,14 +190,14 @@ html, body {
 }
 
 .scan-status {
-  font-size: 9.5px;
+  font-size: 12.5px;
   letter-spacing: 0.14em;
   color: var(--text-dim);
   text-transform: uppercase;
 }
 
 .scan-pct {
-  font-size: 11px;
+  font-size: 14px;
   color: var(--teal);
   letter-spacing: 0.05em;
 }
@@ -213,11 +213,11 @@ html, body {
   align-items: center;
   gap: 8px;
   padding: 5px 0;
-  font-size: 10.5px;
+  font-size: 13.5px;
 }
 
 .pipe-num {
-  font-size: 9px;
+  font-size: 12px;
   letter-spacing: 0.05em;
   width: 18px;
   flex-shrink: 0;
@@ -228,15 +228,15 @@ html, body {
 .pipe-dot   { width: 12px; flex-shrink: 0; text-align: center; }
 
 .pipe-row.done    .pipe-num   { color: var(--text-dim); }
-.pipe-row.done    .pipe-check { color: var(--green); font-size: 10px; }
+.pipe-row.done    .pipe-check { color: var(--green); font-size: 13px; }
 .pipe-row.done    .pipe-label { color: var(--text-dim); }
 
 .pipe-row.current .pipe-num   { color: var(--teal); }
 .pipe-row.current .pipe-label { color: var(--text); }
 
-.pipe-row.pending .pipe-num   { color: #2a3e2d; }
-.pipe-row.pending .pipe-dot   { color: #2a3e2d; }
-.pipe-row.pending .pipe-label { color: #2a3e2d; }
+.pipe-row.pending .pipe-num   { color: var(--text-dim); opacity: 0.4; }
+.pipe-row.pending .pipe-dot   { color: var(--text-dim); opacity: 0.4; }
+.pipe-row.pending .pipe-label { color: var(--text-dim); opacity: 0.4; }
 
 .cursor {
   display: inline-block;
@@ -278,7 +278,7 @@ html, body {
 .state-icon    { font-size: 20px; opacity: 0.5; }
 
 .state-message {
-  font-size: 10px;
+  font-size: 13px;
   color: var(--text-dim);
   letter-spacing: 0.04em;
   line-height: 1.6;
@@ -291,7 +291,7 @@ html, body {
   border: 1px solid var(--teal);
   color: var(--teal);
   font-family: var(--mono);
-  font-size: 9.5px;
+  font-size: 12.5px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   border-radius: 2px;
@@ -319,7 +319,7 @@ html, body {
   border-bottom: 2px solid transparent;
   color: var(--text-dim);
   font-family: var(--mono);
-  font-size: 10.5px;
+  font-size: 13.5px;
   letter-spacing: 0.05em;
   cursor: pointer;
   display: flex;
@@ -344,7 +344,7 @@ html, body {
   color: var(--text-dim);
   border-radius: 8px;
   padding: 0 5px;
-  font-size: 9px;
+  font-size: 12px;
   min-width: 14px;
   text-align: center;
 }
@@ -370,7 +370,7 @@ html, body {
   align-items: center;
   gap: 5px;
   padding: 4px 0;
-  font-size: 9.5px;
+  font-size: 12.5px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.1em;
@@ -379,7 +379,7 @@ html, body {
 }
 
 .suggestion-group-icon {
-  font-size: 11px;
+  font-size: 14px;
 }
 
 .suggestion-group-count {
@@ -388,7 +388,7 @@ html, body {
   color: var(--text-dim);
   border-radius: 8px;
   padding: 0 5px;
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .suggestion-card {
@@ -400,15 +400,15 @@ html, body {
 }
 
 .suggestion-feature-name {
-  font-size: 11.5px;
+  font-size: 14.5px;
   font-weight: 600;
   margin-bottom: 3px;
-  color: #d4e6d5;
+  color: var(--text);
   letter-spacing: 0.01em;
 }
 
 .suggestion-explanation {
-  font-size: 10.5px;
+  font-size: 13.5px;
   color: var(--text-dim);
   margin-bottom: 7px;
   line-height: 1.5;
@@ -421,7 +421,7 @@ html, body {
 }
 
 .suggestion-savings {
-  font-size: 10.5px;
+  font-size: 13.5px;
   color: var(--green);
   font-weight: 600;
   letter-spacing: 0.02em;
@@ -434,7 +434,7 @@ html, body {
   border: none;
   border-radius: 2px;
   font-family: var(--mono);
-  font-size: 9.5px;
+  font-size: 12.5px;
   letter-spacing: 0.03em;
   cursor: pointer;
   transition: background 0.1s;
@@ -459,7 +459,7 @@ html, body {
 }
 
 .empty-title {
-  font-size: 11.5px;
+  font-size: 14.5px;
   font-weight: 600;
   margin-bottom: 5px;
   color: var(--text);
@@ -467,7 +467,7 @@ html, body {
 }
 
 .empty-desc {
-  font-size: 10px;
+  font-size: 13px;
   letter-spacing: 0.03em;
   line-height: 1.5;
 }
@@ -479,7 +479,7 @@ html, body {
 }
 
 .predict-intro {
-  font-size: 11px;
+  font-size: 14px;
   color: var(--text-dim);
   margin-bottom: 10px;
   line-height: 1.5;
@@ -492,7 +492,7 @@ html, body {
   border: 1px solid var(--divider);
   border-radius: 4px;
   padding: 8px;
-  font-size: 12px;
+  font-size: 15px;
   font-family: inherit;
   resize: vertical;
   box-sizing: border-box;
@@ -511,7 +511,7 @@ html, body {
   color: #000;
   border: none;
   border-radius: 4px;
-  font-size: 12px;
+  font-size: 15px;
   font-weight: 600;
   cursor: pointer;
   text-align: center;
@@ -528,7 +528,7 @@ html, body {
 
 .predict-status {
   margin-top: 8px;
-  font-size: 11px;
+  font-size: 14px;
   padding: 4px 8px;
   border-radius: 3px;
 }
@@ -560,7 +560,7 @@ html, body {
 }
 
 .welcome-title {
-  font-size: 14px;
+  font-size: 17px;
   font-weight: 600;
   color: var(--text);
   margin: 0;
@@ -571,17 +571,18 @@ html, body {
 .scan-btn {
   margin-top: 8px;
   padding: 7px 28px;
-  background: var(--vscode-button-background);
-  color: var(--vscode-button-foreground);
+  background: var(--teal);
+  color: #fff;
   border: none;
   border-radius: 4px;
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: 15px;
   letter-spacing: 0.05em;
   cursor: pointer;
   transition: background 0.1s;
 }
 
 .scan-btn:hover {
-  background: var(--vscode-button-hoverBackground);
+  background: var(--teal);
+  opacity: 0.85;
 }

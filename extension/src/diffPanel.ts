@@ -83,6 +83,12 @@ export class CanopyDiffPanel {
             updateStatusBarRef?.(updatedResults.features, updatedResults.totals);
 
             panel.dispose();
+
+            if (files.length > 0) {
+              const firstUri = vscode.Uri.file(path.join(workspacePath, files[0].path));
+              const doc = await vscode.workspace.openTextDocument(firstUri);
+              await vscode.window.showTextDocument(doc, { preview: false, viewColumn: vscode.ViewColumn.One });
+            }
           } else {
             vscode.window.showErrorMessage('Canopy: Failed to apply changes to files.');
           }
