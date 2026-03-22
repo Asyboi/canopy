@@ -14,7 +14,9 @@ interface GraphNode extends d3.SimulationNodeDatum {
   feature: Feature
 }
 
-interface GraphLink extends d3.SimulationLinkDatum<GraphNode> {}
+interface GraphLink extends d3.SimulationLinkDatum<GraphNode> {
+  kind: 'hard' | 'soft'
+}
 
 interface TooltipState {
   x: number
@@ -46,12 +48,37 @@ function buildGraph(analysis: AnalysisResult): { nodes: GraphNode[]; links: Grap
   const featureIds = new Set(analysis.features.map((f) => f.id))
   const nodes: GraphNode[] = analysis.features.map((f) => ({ id: f.id, feature: f }))
   const links: GraphLink[] = []
+  const hardPairs = new Set<string>()
 
+  // Hard links: explicit code dependency (feature A imports feature B's files)
   for (const f of analysis.features) {
     for (const depId of f.dependencies ?? []) {
       if (featureIds.has(depId) && depId !== f.id) {
-        links.push({ source: f.id, target: depId })
+        links.push({ source: f.id, target: depId, kind: 'hard' })
+        hardPairs.add(`${f.id}__${depId}`)
+        hardPairs.add(`${depId}__${f.id}`)
       }
+    }
+  }
+
+  // Soft links: features sharing a common subdirectory (e.g. src/auth, src/api)
+  function subdirs(files: string[]): Set<string> {
+    const s = new Set<string>()
+    for (const file of files) {
+      const parts = file.split('/')
+      if (parts.length >= 2) s.add(parts[0] + '/' + parts[1])
+      else s.add(parts[0])
+    }
+    return s
+  }
+
+  const dirs = analysis.features.map((f) => ({ id: f.id, dirs: subdirs(f.files) }))
+  for (let i = 0; i < dirs.length; i++) {
+    for (let j = i + 1; j < dirs.length; j++) {
+      const a = dirs[i], b = dirs[j]
+      if (hardPairs.has(`${a.id}__${b.id}`)) continue
+      const shared = [...a.dirs].some((d) => b.dirs.has(d))
+      if (shared) links.push({ source: a.id, target: b.id, kind: 'soft' })
     }
   }
 
@@ -117,15 +144,23 @@ export default function GraphPanel({ analysis, selectedFeatureId, onSelectFeatur
       .attr('d', 'M0,-4L8,0L0,4')
       .attr('fill', 'rgba(120,170,145,0.3)')
 
-    // Dependency links
-    const link = g.append('g')
+    // Hard dependency links — solid, directional
+    const hardLink = g.append('g')
       .selectAll<SVGLineElement, GraphLink>('line')
-      .data(links)
+      .data(links.filter((l) => l.kind === 'hard'))
       .join('line')
-      .attr('stroke', 'rgba(120,170,145,0.25)')
-      .attr('stroke-width', 1)
+      .attr('stroke', 'rgba(120,170,145,0.7)')
+      .attr('stroke-width', 1.5)
       .attr('marker-end', 'url(#arrow)')
-      .attr('opacity', 0.6)
+
+    // Soft proximity links — dashed, undirected
+    const softLink = g.append('g')
+      .selectAll<SVGLineElement, GraphLink>('line')
+      .data(links.filter((l) => l.kind === 'soft'))
+      .join('line')
+      .attr('stroke', 'rgba(184,200,192,0.25)')
+      .attr('stroke-width', 1)
+      .attr('stroke-dasharray', '4 4')
 
     // Node groups
     const nodeGroup = g.append('g')
@@ -219,8 +254,8 @@ export default function GraphPanel({ analysis, selectedFeatureId, onSelectFeatur
     const sim = d3.forceSimulation<GraphNode>(nodes)
       .force('link', d3.forceLink<GraphNode, GraphLink>(links)
         .id((d) => d.id)
-        .distance(140)
-        .strength(0.4)
+        .distance((d) => (d as GraphLink).kind === 'hard' ? 140 : 200)
+        .strength((d) => (d as GraphLink).kind === 'hard' ? 0.4 : 0.15)
       )
       .force('charge', d3.forceManyBody().strength(-250))
       .force('center', d3.forceCenter(width / 2, height / 2).strength(0.08))
@@ -231,12 +266,13 @@ export default function GraphPanel({ analysis, selectedFeatureId, onSelectFeatur
       .alphaDecay(0.025)
 
     sim.on('tick', () => {
-      link
-        .attr('x1', (d) => (d.source as GraphNode).x ?? 0)
-        .attr('y1', (d) => (d.source as GraphNode).y ?? 0)
-        .attr('x2', (d) => (d.target as GraphNode).x ?? 0)
-        .attr('y2', (d) => (d.target as GraphNode).y ?? 0)
-
+      for (const sel of [hardLink, softLink]) {
+        sel
+          .attr('x1', (d) => (d.source as GraphNode).x ?? 0)
+          .attr('y1', (d) => (d.source as GraphNode).y ?? 0)
+          .attr('x2', (d) => (d.target as GraphNode).x ?? 0)
+          .attr('y2', (d) => (d.target as GraphNode).y ?? 0)
+      }
       nodeGroup.attr('transform', (d) => `translate(${d.x ?? 0},${d.y ?? 0})`)
     })
 
@@ -289,6 +325,14 @@ export default function GraphPanel({ analysis, selectedFeatureId, onSelectFeatur
           <span className="flex items-center gap-1.5 ml-1">
             <span className="inline-block w-3 h-3 rounded-full bg-canopy-accent text-[7px] font-bold text-canopy-bg flex items-center justify-center leading-none">N</span>
             Pending fixes
+          </span>
+          <span className="flex items-center gap-1 ml-1">
+            <span className="inline-block w-4 border-t border-[#4FCB82] opacity-70" />
+            Depends on
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="inline-block w-4 border-t border-dashed border-[#B8C8C0] opacity-40" />
+            Same module
           </span>
           <span className="flex items-center gap-1 ml-1 text-canopy-muted/50">
             Click node to select · Node size = complexity

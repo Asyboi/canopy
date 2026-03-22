@@ -57,26 +57,28 @@ html, body {
   text-transform: uppercase;
 }
 
-/* ── Dashboard button ─────────────────────────────── */
 
-.btn-dashboard {
+/* ── Globe icon (tab bar dashboard shortcut) ──────── */
+
+.tab-globe {
+  flex-shrink: 0;
+  width: 30px;
+  padding: 7px 6px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-dim);
+  font-size: 13px;
+  cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 6px;
-  width: 100%;
-  padding: 7px 10px;
-  margin-bottom: 8px;
-  background: var(--vscode-button-background);
-  color: var(--vscode-button-foreground);
-  border: none;
-  border-radius: 4px;
-  font-size: 12px;
-  cursor: pointer;
-  text-align: left;
+  justify-content: center;
+  transition: color 0.1s, background 0.1s;
 }
 
-.btn-dashboard:hover {
-  background: var(--vscode-button-hoverBackground);
+.tab-globe:hover {
+  color: var(--text);
+  background: var(--bg-hover);
 }
 
 /* ── Feature list ─────────────────────────────────────────────────────── */

@@ -163,6 +163,7 @@
         <button class="tab-btn" data-tab="predict">
           Predict <span class="tab-count">✨</span>
         </button>
+        <button class="tab-globe" id="btn-globe" title="Open Dashboard">🌐</button>
       </div>
       <div id="tab-features" class="tab-panel"></div>
       <div id="tab-suggestions" class="tab-panel" style="display:none"></div>
@@ -171,6 +172,10 @@
 
     renderFeaturesTab(features, root.querySelector('#tab-features'));
     const renderedTabs = new Set(['features']);
+
+    root.querySelector('#btn-globe')?.addEventListener('click', () => {
+      vscode.postMessage({ type: 'openDashboard' });
+    });
 
     root.querySelectorAll('.tab-btn').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -209,16 +214,9 @@
         <div class="panel-title">CANOPY — Codebase Features</div>
         <div class="panel-meta">${escHtml(metaLine)}</div>
       </div>
-      <button class="btn-dashboard" id="btn-dashboard">
-        <span class="btn-dashboard-icon">🌐</span> Open Dashboard
-      </button>
       <div class="feature-list">
         ${sorted.map(featureRow).join('')}
       </div>`;
-
-    container.querySelector('#btn-dashboard')?.addEventListener('click', () => {
-      vscode.postMessage({ type: 'openDashboard' });
-    });
 
     container.querySelectorAll('.feature-row[data-feature-id]').forEach(row => {
       row.addEventListener('click', () => {
@@ -367,17 +365,11 @@
       <div class="panel-header">
         <div class="panel-title">CANOPY — Codebase Features</div>
       </div>
-      <button class="btn-dashboard" id="btn-dashboard">
-        <span class="btn-dashboard-icon">🌐</span> Open Dashboard
-      </button>
       <div class="state-box">
         <div class="state-icon">⚠</div>
         <div class="state-message">${escHtml(message || 'Analysis failed')}</div>
         <button class="btn-retry" id="btn-retry">Re-analyze</button>
       </div>`;
-    root.querySelector('#btn-dashboard').addEventListener('click', () => {
-      vscode.postMessage({ type: 'openDashboard' });
-    });
     root.querySelector('#btn-retry')?.addEventListener('click', () => {
       vscode.postMessage({ type: 'reanalyze' });
     });
