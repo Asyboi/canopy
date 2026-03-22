@@ -112,3 +112,33 @@ export interface DetectedPattern {
   explanation: string;
   estimatedSavingsPercent: number;
 }
+
+export interface SustainabilityPrediction {
+  electricityKwh: number;
+  carbonKgCo2e: number;
+  sci: {
+    score: number;
+    unit: string;
+    components: { E_per_R: number; I: number; M_per_R: number };
+    functionalUnit: string;
+  };
+  isEstimated: true;
+  isPredicted: true;
+}
+
+export interface FeaturePrediction {
+  featureName: string;
+  description: string;
+  predictedComplexityScore: number;
+  sustainability: SustainabilityPrediction;
+  identifiedPatterns: ('POLLING' | 'N_PLUS_ONE' | 'SYNC_BLOCKING')[];
+  patternExplanation: string;
+  greenerAlternative: {
+    featureName: string;
+    description: string;
+    predictedComplexityScore: number;
+    sustainability: SustainabilityPrediction;
+    codeSkeleton: string;
+  };
+  savingsPercent: number;
+}

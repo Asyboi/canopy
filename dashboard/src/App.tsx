@@ -12,6 +12,7 @@ import type { Feature } from './lib/types'
 export default function App() {
   const { analysis, loading, error, consecutiveFailures, workspacePath, isAnalyzing, reanalyze } = useAnalysis()
   const [selectedFeatureId, setSelectedFeatureId] = useState<string | null>(null)
+  const [popupOpen, setPopupOpen] = useState(false)
 
   // Show landing page when no workspace is specified
   if (!workspacePath) return <LandingPage />
@@ -19,12 +20,17 @@ export default function App() {
   const selectedFeature: Feature | null =
     analysis?.features.find((f) => f.id === selectedFeatureId) ?? null
 
-  const handleSelectFeature = (id: string) => {
+  const handleSelectFeatureFromGraph = (id: string) => {
     setSelectedFeatureId(id)
   }
 
+  const handleSelectFeatureFromList = (id: string) => {
+    setSelectedFeatureId(id)
+    setPopupOpen(true)
+  }
+
   const handleClosePopup = () => {
-    setSelectedFeatureId(null)
+    setPopupOpen(false)
   }
 
   return (
@@ -85,7 +91,7 @@ export default function App() {
               <FeatureList
                 features={analysis.features}
                 selectedFeatureId={selectedFeatureId}
-                onSelectFeature={handleSelectFeature}
+                onSelectFeature={handleSelectFeatureFromList}
               />
             </div>
 
@@ -94,7 +100,7 @@ export default function App() {
               <GraphPanel
                 analysis={analysis}
                 selectedFeatureId={selectedFeatureId}
-                onSelectFeature={handleSelectFeature}
+                onSelectFeature={handleSelectFeatureFromGraph}
               />
             </div>
 
@@ -110,7 +116,7 @@ export default function App() {
       )}
 
       {/* Equivalents popup (portal-like, rendered at root) */}
-      {selectedFeature && (
+      {popupOpen && selectedFeature && (
         <EquivalentsPopup feature={selectedFeature} onClose={handleClosePopup} />
       )}
     </div>
