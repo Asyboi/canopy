@@ -23,7 +23,7 @@ export function createApp(): express.Application {
   app.get('/', (_req, res) => {
     res.sendFile(path.join(dashboardDist, 'index.html'));
   });
-  app.get('/dashboard', (_req, res) => {
+  app.get(/^\/dashboard(?:\/.*)?$/, (_req, res) => {
     res.sendFile(path.join(dashboardDist, 'index.html'));
   });
 
