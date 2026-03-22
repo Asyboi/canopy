@@ -51,103 +51,117 @@ function chunkCode(
   );
 }
 
+const FEATURE_CONCURRENCY = 4;
+
+async function processFeature(
+  feature: Feature,
+  workspacePath: string
+): Promise<void> {
+  // Concatenate all file contents
+  let allCode = '';
+  const fileContents = new Map<string, string>();
+
+  for (const file of feature.files) {
+    try {
+      const absPath = path.join(workspacePath, file);
+      const content = fs.readFileSync(absPath, 'utf-8');
+      fileContents.set(file, content);
+      allCode += `// FILE: ${file}\n${content}\n\n`;
+    } catch {
+      // Skip unreadable files
+    }
+  }
+
+  if (!allCode.trim()) {
+    feature.suggestions = [];
+    return;
+  }
+
+  // Detect patterns across all chunks in parallel
+  const chunks = chunkCode(allCode, feature.name);
+  const chunkResults = await Promise.all(
+    chunks.map(async (chunk) => {
+      try {
+        return await detectPatterns(chunk);
+      } catch (err) {
+        console.warn(
+          `Pattern detection failed for chunk in feature ${feature.name}:`,
+          err instanceof Error ? err.message : err
+        );
+        return [];
+      }
+    })
+  );
+
+  // Deduplicate patterns by location
+  const allPatterns = new Map<string, import('../types').DetectedPattern>();
+  for (const patterns of chunkResults) {
+    for (const pattern of patterns) {
+      if (!allPatterns.has(pattern.location)) {
+        allPatterns.set(pattern.location, pattern);
+      }
+    }
+  }
+
+  // Generate suggestions for all patterns in parallel
+  const suggestionResults = await Promise.all(
+    Array.from(allPatterns.values()).map(async (pattern) => {
+      let targetFile = feature.files[0];
+      let targetContent = '';
+      for (const [file, content] of fileContents.entries()) {
+        if (content.includes(pattern.currentCode.slice(0, 50))) {
+          targetFile = file;
+          targetContent = content;
+          break;
+        }
+      }
+      if (!targetContent) {
+        targetContent = fileContents.get(targetFile) || '';
+      }
+
+      const newContent = await generateGreenSuggestion(
+        pattern.patternType,
+        pattern.currentCode,
+        targetContent
+      );
+
+      if (!newContent) return null;
+
+      return {
+        id: `suggestion_${uuidv4().replace(/-/g, '').slice(0, 12)}`,
+        status: 'suggested' as const,
+        patternType: pattern.patternType,
+        location: pattern.location,
+        explanation: pattern.explanation,
+        estimatedSavingsPercent: pattern.estimatedSavingsPercent,
+        currentCode: pattern.currentCode,
+        suggestedFileChanges: [{ filePath: targetFile, newContent }],
+      };
+    })
+  );
+
+  feature.suggestions = suggestionResults.filter((s) => s !== null) as Suggestion[];
+}
+
 export async function detectAndSuggest(
   features: Feature[],
   workspacePath: string
 ): Promise<void> {
-  for (const feature of features) {
-    try {
-      // Concatenate all file contents
-      let allCode = '';
-      const fileContents = new Map<string, string>();
-
-      for (const file of feature.files) {
-        try {
-          const absPath = path.join(workspacePath, file);
-          const content = fs.readFileSync(absPath, 'utf-8');
-          fileContents.set(file, content);
-          allCode += `// FILE: ${file}\n${content}\n\n`;
-        } catch {
-          // Skip unreadable files
-        }
-      }
-
-      if (!allCode.trim()) {
-        feature.suggestions = [];
-        continue;
-      }
-
-      // Chunk if needed and detect patterns
-      const chunks = chunkCode(allCode, feature.name);
-      const allPatterns = new Map<string, import('../types').DetectedPattern>();
-
-      for (const chunk of chunks) {
-        try {
-          const patterns = await detectPatterns(chunk);
-          for (const pattern of patterns) {
-            if (!allPatterns.has(pattern.location)) {
-              allPatterns.set(pattern.location, pattern);
-            }
-          }
-        } catch (err) {
-          console.warn(
-            `Pattern detection failed for chunk in feature ${feature.name}:`,
-            err instanceof Error ? err.message : err
-          );
-        }
-      }
-
-      // Generate green suggestions for each pattern
-      const suggestions: Suggestion[] = [];
-
-      for (const pattern of allPatterns.values()) {
-        // Find which file contains this pattern
-        let targetFile = feature.files[0];
-        let targetContent = '';
-        for (const [file, content] of fileContents.entries()) {
-          if (content.includes(pattern.currentCode.slice(0, 50))) {
-            targetFile = file;
-            targetContent = content;
-            break;
-          }
-        }
-
-        if (!targetContent) {
-          targetContent = fileContents.get(targetFile) || '';
-        }
-
-        const newContent = await generateGreenSuggestion(
-          pattern.patternType,
-          pattern.currentCode,
-          targetContent
+  // Process features with a concurrency limit to avoid overwhelming the Claude API
+  const queue = [...features];
+  const workers = Array.from({ length: FEATURE_CONCURRENCY }, async () => {
+    while (queue.length > 0) {
+      const feature = queue.shift()!;
+      try {
+        await processFeature(feature, workspacePath);
+      } catch (err) {
+        console.warn(
+          `Pattern detection failed for feature ${feature.name}:`,
+          err instanceof Error ? err.message : err
         );
-
-        if (newContent) {
-          suggestions.push({
-            id: `suggestion_${uuidv4().replace(/-/g, '').slice(0, 12)}`,
-            status: 'suggested',
-            patternType: pattern.patternType,
-            location: pattern.location,
-            explanation: pattern.explanation,
-            estimatedSavingsPercent: pattern.estimatedSavingsPercent,
-            currentCode: pattern.currentCode,
-            suggestedFileChanges: [
-              {
-                filePath: targetFile,
-                newContent,
-              },
-            ],
-          });
-        }
+        feature.suggestions = [];
       }
-
-      feature.suggestions = suggestions;
-    } catch (err) {
-      console.warn(
-        `Pattern detection failed for feature ${feature.name}:`,
-        err instanceof Error ? err.message : err
-      );
-      feature.suggestions = [];
     }
-  }
+  });
+  await Promise.all(workers);
 }

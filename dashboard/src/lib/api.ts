@@ -5,9 +5,9 @@ export function getWorkspacePath(): string {
   return new URLSearchParams(window.location.search).get('workspacePath') ?? ''
 }
 
-// Base URL: in prod we're served from the same Express server, so relative paths work.
-// In dev (Vite proxy), also relative.
-const BASE = ''
+// Base URL: empty in dev (Vite proxy handles it) or when served from Express.
+// Set VITE_API_URL to point at the deployed server (e.g. Railway) when hosting dashboard separately.
+const BASE = import.meta.env.VITE_API_URL ?? ''
 
 async function post<T>(path: string, body: object, signal?: AbortSignal): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {

@@ -1,4 +1,4 @@
-import EventSource = require('eventsource');
+import { EventSource } from 'eventsource';
 import { AnalysisResult, Feature, FileChange } from './types';
 
 async function apiRequest<T>(url: string, options?: RequestInit): Promise<T> {

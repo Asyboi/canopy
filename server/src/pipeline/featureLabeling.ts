@@ -34,24 +34,26 @@ export async function labelFeatures(
   features: Feature[],
   depGraph: DependencyGraph
 ): Promise<void> {
-  for (const feature of features) {
-    const fileList = feature.files.join('\n');
-    const importSummary = feature.files
-      .map((f) => {
-        const deps = depGraph[f];
-        return deps && deps.length > 0 ? `${f} → ${deps.join(', ')}` : null;
-      })
-      .filter(Boolean)
-      .join('\n');
+  await Promise.all(
+    features.map(async (feature) => {
+      const fileList = feature.files.join('\n');
+      const importSummary = feature.files
+        .map((f) => {
+          const deps = depGraph[f];
+          return deps && deps.length > 0 ? `${f} → ${deps.join(', ')}` : null;
+        })
+        .filter(Boolean)
+        .join('\n');
 
-    try {
-      feature.name = await labelFeature(fileList, importSummary || 'No imports');
-    } catch (err) {
-      console.warn(
-        `Gemini labeling failed for feature ${feature.id}, using fallback:`,
-        err instanceof Error ? err.message : err
-      );
-      feature.name = fallbackLabel(feature.files);
-    }
-  }
+      try {
+        feature.name = await labelFeature(fileList, importSummary || 'No imports');
+      } catch (err) {
+        console.warn(
+          `Gemini labeling failed for feature ${feature.id}, using fallback:`,
+          err instanceof Error ? err.message : err
+        );
+        feature.name = fallbackLabel(feature.files);
+      }
+    })
+  );
 }
