@@ -12,3 +12,4 @@ server/.canopy/
 extension/out/
 extension/node_modules/
 node_modules/
+test-repo/
