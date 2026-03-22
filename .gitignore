@@ -3,6 +3,7 @@
 
 # Generated analysis output
 demo-repo/.canopy/
+test-repo/.canopy/
 
 # Server runtime files
 server/.canopy/
