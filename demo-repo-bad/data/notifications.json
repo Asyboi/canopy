@@ -1,0 +1,22 @@
+[
+  {"id":"n1","userId":"user_1","type":"mention","message":"You were mentioned in PR #102","read":false,"priority":"high","createdAt":"2026-03-21T10:00:00Z"},
+  {"id":"n2","userId":"user_2","type":"assignment","message":"Task PROJ-44 assigned to you","read":false,"priority":"medium","createdAt":"2026-03-21T09:55:00Z"},
+  {"id":"n3","userId":"user_3","type":"comment","message":"New comment on issue #88","read":true,"priority":"low","createdAt":"2026-03-21T09:50:00Z"},
+  {"id":"n4","userId":"user_4","type":"review","message":"Review requested on PR #109","read":false,"priority":"high","createdAt":"2026-03-21T09:45:00Z"},
+  {"id":"n5","userId":"user_5","type":"deploy","message":"Deploy to staging completed","read":true,"priority":"low","createdAt":"2026-03-21T09:40:00Z"},
+  {"id":"n6","userId":"user_6","type":"mention","message":"You were mentioned in PR #114","read":false,"priority":"high","createdAt":"2026-03-21T09:35:00Z"},
+  {"id":"n7","userId":"user_7","type":"assignment","message":"Task PROJ-55 assigned to you","read":false,"priority":"medium","createdAt":"2026-03-21T09:30:00Z"},
+  {"id":"n8","userId":"user_8","type":"comment","message":"New comment on issue #92","read":true,"priority":"low","createdAt":"2026-03-21T09:25:00Z"},
+  {"id":"n9","userId":"user_9","type":"review","message":"Review requested on PR #117","read":false,"priority":"high","createdAt":"2026-03-21T09:20:00Z"},
+  {"id":"n10","userId":"user_10","type":"deploy","message":"Deploy to production completed","read":true,"priority":"medium","createdAt":"2026-03-21T09:15:00Z"},
+  {"id":"n11","userId":"user_1","type":"mention","message":"You were mentioned in issue #23","read":false,"priority":"medium","createdAt":"2026-03-21T09:10:00Z"},
+  {"id":"n12","userId":"user_2","type":"comment","message":"New comment on PR #102","read":false,"priority":"low","createdAt":"2026-03-21T09:05:00Z"},
+  {"id":"n13","userId":"user_3","type":"assignment","message":"Task PROJ-61 assigned to you","read":false,"priority":"high","createdAt":"2026-03-21T09:00:00Z"},
+  {"id":"n14","userId":"user_4","type":"mention","message":"You were mentioned in comment #445","read":true,"priority":"low","createdAt":"2026-03-21T08:55:00Z"},
+  {"id":"n15","userId":"user_5","type":"review","message":"Review completed on your PR","read":false,"priority":"high","createdAt":"2026-03-21T08:50:00Z"},
+  {"id":"n16","userId":"user_6","type":"deploy","message":"Deploy failed — rollback initiated","read":false,"priority":"high","createdAt":"2026-03-21T08:45:00Z"},
+  {"id":"n17","userId":"user_7","type":"mention","message":"You were mentioned in wiki page","read":true,"priority":"low","createdAt":"2026-03-21T08:40:00Z"},
+  {"id":"n18","userId":"user_8","type":"assignment","message":"Task PROJ-72 assigned to you","read":false,"priority":"medium","createdAt":"2026-03-21T08:35:00Z"},
+  {"id":"n19","userId":"user_9","type":"comment","message":"New comment on issue #101","read":true,"priority":"low","createdAt":"2026-03-21T08:30:00Z"},
+  {"id":"n20","userId":"user_10","type":"review","message":"Review requested on PR #121","read":false,"priority":"high","createdAt":"2026-03-21T08:25:00Z"}
+]

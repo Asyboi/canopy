@@ -76,7 +76,12 @@ export function createResultsRouter(): Router {
   });
 
   router.post('/mark-applied', (req: Request, res: Response) => {
-    const { workspacePath, featureId, suggestionId } = req.body;
+    const { workspacePath, featureId, suggestionId, files } = req.body as {
+      workspacePath: string;
+      featureId: string;
+      suggestionId: string;
+      files?: { path: string; newContent: string }[];
+    };
     const error = validateWorkspacePath(workspacePath);
     if (error) {
       return res.status(400).json({ error });
@@ -97,17 +102,56 @@ export function createResultsRouter(): Router {
       return res.status(404).json({ error: 'Suggestion not found' });
     }
 
+    // Idempotent: skip if already applied
+    if (suggestion.status === 'applied') {
+      return res.json({ status: 'ok', updatedFeature: feature });
+    }
+
+    // Write suggested file changes to disk (safe: paths must stay inside workspacePath)
+    if (files && files.length > 0) {
+      const resolvedWorkspace = path.resolve(workspacePath);
+      for (const file of files) {
+        const resolvedFile = path.resolve(workspacePath, file.path);
+        if (!resolvedFile.startsWith(resolvedWorkspace + path.sep) &&
+            resolvedFile !== resolvedWorkspace) {
+          return res.status(400).json({ error: `Path escape detected: ${file.path}` });
+        }
+        // Backup original before overwriting
+        try {
+          const backupDir = path.join(workspacePath, '.canopy', 'backups');
+          fs.mkdirSync(backupDir, { recursive: true });
+          const backupName = file.path.replace(/[/\\]/g, '_') + `.${Date.now()}.bak`;
+          if (fs.existsSync(resolvedFile)) {
+            fs.copyFileSync(resolvedFile, path.join(backupDir, backupName));
+          }
+        } catch {
+          // Backup failure is non-fatal
+        }
+        fs.mkdirSync(path.dirname(resolvedFile), { recursive: true });
+        fs.writeFileSync(resolvedFile, file.newContent, 'utf-8');
+      }
+    }
+
     suggestion.status = 'applied';
 
     const savingsPercent = suggestion.estimatedSavingsPercent / 100;
     const savingsElectricity = feature.sustainability.electricityKwh * savingsPercent;
     const savingsCarbon = feature.sustainability.carbonKgCo2e * savingsPercent;
+    const savingsSci = feature.sci ? feature.sci.sciGco2PerR * savingsPercent : 0;
 
     feature.sustainability.electricityKwh -= savingsElectricity;
     feature.sustainability.carbonKgCo2e -= savingsCarbon;
+    if (feature.sci) {
+      feature.sci.sciGco2PerR = parseFloat((feature.sci.sciGco2PerR - savingsSci).toFixed(2));
+    }
 
     analysis.totals.electricityKwh -= savingsElectricity;
     analysis.totals.carbonKgCo2e -= savingsCarbon;
+    if (analysis.sciTotals) {
+      analysis.sciTotals.sciGco2PerR = parseFloat(
+        (analysis.sciTotals.sciGco2PerR - savingsSci).toFixed(2)
+      );
+    }
 
     // savingsPercent is already a decimal (e.g. 0.61), so reduction = 1 - 0.61 = 0.39
     const reduction = 1 - savingsPercent;
@@ -126,10 +170,11 @@ export function createResultsRouter(): Router {
       patternType: suggestion.patternType,
       savingsElectricityKwh: savingsElectricity,
       savingsCarbonKgCo2e: savingsCarbon,
+      savingsSciGco2PerR: savingsSci,
     });
 
     writeAnalysis(workspacePath, analysis);
-    return res.json({ status: 'ok', updatedFeature: feature });
+    return res.json({ status: 'ok', updatedFeature: feature, filesWritten: (files ?? []).length });
   });
 
   router.post('/dismiss-suggestion', (req: Request, res: Response) => {

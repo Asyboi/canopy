@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Program Files/**)",
+      "Read(//c/Users/gaubl/AppData/Roaming/**)",
+      "Read(//c/Program Files \\(x86\\)/**)",
+      "Bash(cmd.exe /c \"where node\")",
+      "Bash(cmd.exe /c \"where node 2>&1 && where npm 2>&1\")",
+      "Bash(cmd.exe /c \"node --version\")",
+      "Bash(echo \"exit: $?\")",
+      "Read(//c/Users/gaubl/AppData/Local/**)",
+      "Read(//c/Users/gaubl/**)",
+      "Bash(ls \"/c/Program Files \\(x86\\)/nodejs/\")",
+      "Bash(cmd //c \"where npm\")"
+    ]
+  }
+}

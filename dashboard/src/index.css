@@ -1,0 +1,55 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-canopy-bg text-canopy-text;
+    font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+  }
+
+  code, pre, .font-mono {
+    font-family: ui-monospace, 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #2A4A38 #111B17;
+  }
+
+  *::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: #111B17;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: #2A4A38;
+    border-radius: 3px;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background: #3FAF74;
+  }
+}
+
+@keyframes canopy-fade-up {
+  0%   { opacity: 0; transform: translateY(8px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes canopy-pulse-ring {
+  0%   { opacity: 0.6; transform: scale(1); }
+  100% { opacity: 0;   transform: scale(1.6); }
+}
+
+.animate-fade-up {
+  animation: canopy-fade-up 200ms ease-out forwards;
+}
+
+.animate-pulse-ring {
+  animation: canopy-pulse-ring 1.4s ease-out infinite;
+}
