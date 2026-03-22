@@ -43,10 +43,10 @@ export function mergeClusters(
       },
       sustainability: {
         electricityKwh: 0,
-        waterLiters: 0,
         carbonKgCo2e: 0,
         isEstimated: true,
         infrastructureTag: null,
+        sci: { score: 0, unit: '', components: { E_per_R: 0, I: 0, M_per_R: 0 }, functionalUnit: '' },
       },
       sustainabilityTier: 'low',
       sci: { e_kwhPerR: 0, i_gco2PerKwh: 0, m_gco2PerR: 0, sciGco2PerR: 0, functionalUnit: '', confidence: 'low' },

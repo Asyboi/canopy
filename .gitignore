@@ -3,3 +3,7 @@ demo-repo/.canopy/
 
 # Server runtime files
 server/.canopy/
+
+# Extension build output
+extension/out/
+extension/node_modules/

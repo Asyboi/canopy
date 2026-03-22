@@ -1,27 +1,3 @@
-export interface SciMetrics {
-  /** E — Energy consumed (kWh per R) */
-  e_kwhPerR: number;
-  /** I — Carbon intensity assumption (gCO2/kWh) */
-  i_gco2PerKwh: number;
-  /** M — Embodied emissions (gCO2 per R) */
-  m_gco2PerR: number;
-  /** SCI = (E × I) + M  (gCO2 per R) */
-  sciGco2PerR: number;
-  /** R — Functional unit description */
-  functionalUnit: string;
-  /** Confidence in the estimate */
-  confidence: 'low' | 'medium' | 'high';
-}
-
-export interface SciTotals {
-  sciGco2PerR: number;
-  eKwhPerR: number;
-  mGco2PerR: number;
-  iGco2PerKwh: number;
-  functionalUnit: string;
-  methodology: string;
-}
-
 export interface AnalysisResult {
   generatedAt: string;
   workspacePath: string;
@@ -35,7 +11,6 @@ export interface AnalysisResult {
       unit: string;
     };
   };
-  sciTotals: SciTotals;
   history: HistoryEntry[];
 }
 
@@ -43,7 +18,6 @@ export interface Feature {
   id: string;
   name: string;
   files: string[];
-  dependencies: string[];
   metrics: {
     loc: number;
     dependencyCount: number;
@@ -66,7 +40,6 @@ export interface Feature {
       functionalUnit: string;
     };
   };
-  sci: SciMetrics;
   sustainabilityTier: 'high' | 'medium' | 'low';
   suggestions: Suggestion[];
 }
@@ -90,25 +63,9 @@ export interface HistoryEntry {
   patternType: string;
   savingsElectricityKwh: number;
   savingsCarbonKgCo2e: number;
-  savingsSciGco2PerR: number;
 }
 
-export type DependencyGraph = Record<string, string[]>;
-
-export interface CoChangeCluster {
-  files: string[];
-  strength: number;
-}
-
-export interface SSEEvent {
-  event: 'progress' | 'complete' | 'error';
-  data: Record<string, unknown>;
-}
-
-export interface DetectedPattern {
-  patternType: 'POLLING' | 'N_PLUS_ONE' | 'SYNC_BLOCKING';
-  location: string;
-  currentCode: string;
-  explanation: string;
-  estimatedSavingsPercent: number;
+export interface FileChange {
+  path: string;
+  newContent: string;
 }
