@@ -1,0 +1,19 @@
+{
+  "name": "demo-repo-bad",
+  "version": "1.0.0",
+  "description": "Intentionally inefficient TypeScript codebase for Canopy SCI demo",
+  "private": true,
+  "scripts": {
+    "bench:notifications": "tsx scripts/bench-notifications.ts",
+    "bench:reports": "tsx scripts/bench-reports.ts",
+    "bench:users": "tsx scripts/bench-users.ts",
+    "bench:analytics": "tsx scripts/bench-analytics.ts",
+    "bench:export": "tsx scripts/bench-export.ts",
+    "bench:all": "npm run bench:reports && npm run bench:users && npm run bench:analytics && npm run bench:export"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.3",
+    "@types/node": "^22.0.0"
+  }
+}

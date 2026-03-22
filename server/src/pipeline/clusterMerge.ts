@@ -34,6 +34,7 @@ export function mergeClusters(
       id: `feature_${uuidv4().replace(/-/g, '').slice(0, 12)}`,
       name: '',
       files,
+      dependencies: [],
       metrics: {
         loc: 0,
         dependencyCount: 0,
@@ -48,8 +49,30 @@ export function mergeClusters(
         infrastructureTag: null,
       },
       sustainabilityTier: 'low',
+      sci: { e_kwhPerR: 0, i_gco2PerKwh: 0, m_gco2PerR: 0, sciGco2PerR: 0, functionalUnit: '', confidence: 'low' },
       suggestions: [],
     });
+  }
+
+  // Compute inter-feature dependencies from the dep graph
+  const fileToFeatureId = new Map<string, string>();
+  for (const feature of features) {
+    for (const file of feature.files) {
+      fileToFeatureId.set(file, feature.id);
+    }
+  }
+
+  for (const feature of features) {
+    const depIds = new Set<string>();
+    for (const file of feature.files) {
+      for (const dep of depGraph[file] ?? []) {
+        const depFeatureId = fileToFeatureId.get(dep);
+        if (depFeatureId && depFeatureId !== feature.id) {
+          depIds.add(depFeatureId);
+        }
+      }
+    }
+    feature.dependencies = [...depIds];
   }
 
   return features;

@@ -25,3 +25,9 @@ export const TIER_DOT_COLORS = {
 } as const
 
 export const POLL_INTERVAL_MS = 10_000
+
+// Carbon equivalent conversion factors
+export const CARBON_PER_MILE_KG = 0.000404        // EPA: 404g CO₂/mile
+export const CARBON_PER_PHONE_CHARGE_KG = 0.000009 // ~9g CO₂ per smartphone charge
+export const TREE_KG_PER_YEAR = 22                 // ~22 kg CO₂ absorbed per tree per year
+export const HOURS_PER_YEAR = 8760

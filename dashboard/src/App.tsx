@@ -1,28 +1,43 @@
+import { useState } from 'react'
 import { useAnalysis } from './hooks/useAnalysis'
 import Header from './components/Header'
-import StatCards from './components/StatCards'
+import SciHero from './components/SciHero'
 import FeatureList from './components/FeatureList'
 import GraphPanel from './components/GraphPanel'
-import SuggestionsPanel from './components/SuggestionsPanel'
-import SuggestionModal from './components/SuggestionModal'
+import RightPanel from './components/RightPanel'
+import EquivalentsPopup from './components/EquivalentsPopup'
+import type { Feature } from './lib/types'
 
 export default function App() {
-  const ctx = useAnalysis()
-  const { analysis, loading, error, consecutiveFailures, pendingDiff } = ctx
+  const { analysis, loading, error, consecutiveFailures, workspacePath, isAnalyzing, reanalyze } = useAnalysis()
+  const [selectedFeatureId, setSelectedFeatureId] = useState<string | null>(null)
+
+  const selectedFeature: Feature | null =
+    analysis?.features.find((f) => f.id === selectedFeatureId) ?? null
+
+  const handleSelectFeature = (id: string) => {
+    setSelectedFeatureId(id)
+  }
+
+  const handleClosePopup = () => {
+    setSelectedFeatureId(null)
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-canopy-bg text-canopy-text">
-      <Header ctx={ctx} />
+      <Header
+        ctx={{ analysis, isAnalyzing, reanalyze, workspacePath }}
+      />
 
       {/* Connection lost banner */}
       {consecutiveFailures >= 3 && (
-        <div className="bg-red-900/40 border-b border-red-700/50 px-4 py-2 text-sm text-red-300 text-center">
+        <div className="bg-red-900/40 border-b border-red-700/50 px-4 py-2 text-sm text-red-300 text-center flex-shrink-0">
           Connection lost — retrying…
         </div>
       )}
 
-      {/* No workspacePath warning */}
-      {!ctx.workspacePath && (
+      {/* No workspacePath */}
+      {!workspacePath && (
         <div className="flex flex-1 items-center justify-center text-canopy-muted text-sm">
           <div className="text-center">
             <div className="text-4xl mb-3">🌿</div>
@@ -36,17 +51,17 @@ export default function App() {
       )}
 
       {/* Loading */}
-      {ctx.workspacePath && loading && (
+      {workspacePath && loading && (
         <div className="flex flex-1 items-center justify-center text-canopy-muted text-sm">
           <div className="text-center">
-            <div className="animate-pulse text-canopy-green text-4xl mb-3">🌿</div>
+            <div className="animate-pulse text-canopy-accent text-4xl mb-3">🌿</div>
             <p>Loading analysis…</p>
           </div>
         </div>
       )}
 
       {/* Error */}
-      {ctx.workspacePath && !loading && error && !analysis && (
+      {workspacePath && !loading && error && !analysis && (
         <div className="flex flex-1 items-center justify-center text-canopy-muted text-sm">
           <div className="text-center">
             <div className="text-4xl mb-3">⚠️</div>
@@ -57,7 +72,7 @@ export default function App() {
       )}
 
       {/* Empty state */}
-      {ctx.workspacePath && !loading && !error && !analysis && (
+      {workspacePath && !loading && !error && !analysis && (
         <div className="flex flex-1 items-center justify-center text-canopy-muted text-sm">
           <div className="text-center">
             <div className="text-4xl mb-3">🌱</div>
@@ -68,38 +83,45 @@ export default function App() {
       )}
 
       {/* Main layout */}
-      {ctx.workspacePath && analysis && (
-        <div className="flex flex-1 overflow-hidden">
-          {/* Left column */}
-          <div className="w-64 flex-shrink-0 flex flex-col overflow-y-auto border-r border-canopy-border p-3 gap-3">
-            <StatCards totals={analysis.totals} />
-            <FeatureList features={analysis.features} />
-          </div>
+      {workspacePath && analysis && (
+        <>
+          {/* SCI Hero bar */}
+          <SciHero sciTotals={analysis.sciTotals} totals={analysis.totals} />
 
-          {/* Center: graph */}
-          <div className="flex-1 overflow-hidden">
-            <GraphPanel analysis={analysis} onOpenDiff={ctx.openDiff} />
-          </div>
+          {/* Three-column body */}
+          <div className="flex flex-1 overflow-hidden">
+            {/* Left: Feature list */}
+            <div className="w-72 flex-shrink-0 flex flex-col overflow-y-auto border-r border-canopy-border p-3">
+              <FeatureList
+                features={analysis.features}
+                selectedFeatureId={selectedFeatureId}
+                onSelectFeature={handleSelectFeature}
+              />
+            </div>
 
-          {/* Right column */}
-          <div className="w-72 flex-shrink-0 flex flex-col overflow-y-auto border-l border-canopy-border">
-            <SuggestionsPanel
-              analysis={analysis}
-              onOpenDiff={ctx.openDiff}
-              onDismiss={ctx.dismiss}
-            />
+            {/* Center: Graph */}
+            <div className="flex-1 overflow-hidden">
+              <GraphPanel
+                analysis={analysis}
+                selectedFeatureId={selectedFeatureId}
+                onSelectFeature={handleSelectFeature}
+              />
+            </div>
+
+            {/* Right: Tabbed panel */}
+            <div className="w-80 flex-shrink-0 flex flex-col border-l border-canopy-border overflow-hidden">
+              <RightPanel
+                analysis={analysis}
+                selectedFeature={selectedFeature}
+              />
+            </div>
           </div>
-        </div>
+        </>
       )}
 
-      {/* Modal */}
-      {pendingDiff && analysis && (
-        <SuggestionModal
-          analysis={analysis}
-          pendingDiff={pendingDiff}
-          onConfirm={ctx.confirmApply}
-          onCancel={ctx.cancelDiff}
-        />
+      {/* Equivalents popup (portal-like, rendered at root) */}
+      {selectedFeature && (
+        <EquivalentsPopup feature={selectedFeature} onClose={handleClosePopup} />
       )}
     </div>
   )

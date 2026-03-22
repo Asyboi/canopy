@@ -1,4 +1,6 @@
-import { AnalysisResult } from '../types';
+import path from 'path';
+import fs from 'fs';
+import { AnalysisResult, HistoryEntry } from '../types';
 import { broadcast } from '../utils/sse';
 import { runStaticAnalysis } from './staticAnalysis';
 import { runGitClustering } from './gitClustering';
@@ -17,9 +19,22 @@ function emitProgress(
   broadcast(workspacePath, 'progress', { step, message, percent });
 }
 
+function loadExistingHistory(workspacePath: string): HistoryEntry[] {
+  try {
+    const analysisPath = path.join(workspacePath, '.canopy', 'analysis.json');
+    const existing = JSON.parse(fs.readFileSync(analysisPath, 'utf-8')) as AnalysisResult;
+    return existing.history ?? [];
+  } catch {
+    return [];
+  }
+}
+
 export async function runPipeline(
   workspacePath: string
 ): Promise<AnalysisResult> {
+  // Preserve history from previous analysis so re-analyze doesn't wipe it
+  const existingHistory = loadExistingHistory(workspacePath);
+
   // Step 1 — Static analysis
   emitProgress(workspacePath, 1, 'Analyzing dependencies...', 10);
   const depGraph = await runStaticAnalysis(workspacePath);
@@ -29,7 +44,7 @@ export async function runPipeline(
   const coChangeClusters = await runGitClustering(workspacePath);
 
   // Step 3 — Cluster merging
-  emitProgress(workspacePath, 3, 'Scoring complexity...', 40);
+  emitProgress(workspacePath, 3, 'Merging clusters...', 40);
   const features = mergeClusters(depGraph, coChangeClusters);
 
   // Step 4 — Feature labeling with Gemini
@@ -37,20 +52,18 @@ export async function runPipeline(
   await labelFeatures(features, depGraph);
 
   // Step 5 — Complexity scoring
-  emitProgress(workspacePath, 5, 'Calculating sustainability estimates...', 65);
+  emitProgress(workspacePath, 5, 'Scoring complexity...', 65);
   scoreComplexity(features, depGraph, workspacePath);
 
-  // Step 6 — Sustainability estimates
-  calculateSustainability(features);
+  // Step 6 — Sustainability + SCI estimates
+  emitProgress(workspacePath, 6, 'Calculating SCI estimates...', 75);
+  const sciTotals = calculateSustainability(features);
 
-  // Step 7 — Pattern detection
-  emitProgress(workspacePath, 6, 'Detecting inefficiency patterns...', 80);
-
-  // Step 8 — Green suggestion generation (combined with step 7)
-  emitProgress(workspacePath, 7, 'Generating green suggestions...', 92);
+  // Step 7+8 — Pattern detection + suggestion generation
+  emitProgress(workspacePath, 7, 'Detecting inefficiency patterns...', 85);
   await detectAndSuggest(features, workspacePath);
 
-  // Build totals
+  // Build legacy totals
   const totals = {
     electricityKwh: 0,
     waterLiters: 0,
@@ -61,12 +74,16 @@ export async function runPipeline(
     totals.waterLiters += feature.sustainability.waterLiters;
     totals.carbonKgCo2e += feature.sustainability.carbonKgCo2e;
   }
+  totals.electricityKwh = parseFloat(totals.electricityKwh.toFixed(4));
+  totals.waterLiters = parseFloat(totals.waterLiters.toFixed(4));
+  totals.carbonKgCo2e = parseFloat(totals.carbonKgCo2e.toFixed(4));
 
   return {
     generatedAt: new Date().toISOString(),
     workspacePath,
     features,
     totals,
-    history: [],
+    sciTotals,
+    history: existingHistory,
   };
 }

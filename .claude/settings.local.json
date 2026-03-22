@@ -9,7 +9,9 @@
       "Bash(cmd.exe /c \"node --version\")",
       "Bash(echo \"exit: $?\")",
       "Read(//c/Users/gaubl/AppData/Local/**)",
-      "Read(//c/Users/gaubl/**)"
+      "Read(//c/Users/gaubl/**)",
+      "Bash(ls \"/c/Program Files \\(x86\\)/nodejs/\")",
+      "Bash(cmd //c \"where npm\")"
     ]
   }
 }

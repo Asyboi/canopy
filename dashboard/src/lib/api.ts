@@ -53,9 +53,10 @@ export async function applyPreview(
 export async function markApplied(
   workspacePath: string,
   featureId: string,
-  suggestionId: string
+  suggestionId: string,
+  files?: { path: string; newContent: string }[]
 ): Promise<void> {
-  await post('/mark-applied', { workspacePath, featureId, suggestionId })
+  await post('/mark-applied', { workspacePath, featureId, suggestionId, files })
 }
 
 export async function dismissSuggestion(

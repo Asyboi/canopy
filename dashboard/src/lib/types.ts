@@ -1,5 +1,28 @@
 // Mirrored from server/src/types.ts
 
+export interface SciMetrics {
+  /** E — Energy consumed (kWh per R) */
+  e_kwhPerR: number
+  /** I — Carbon intensity assumption (gCO2/kWh) */
+  i_gco2PerKwh: number
+  /** M — Embodied emissions (gCO2 per R) */
+  m_gco2PerR: number
+  /** SCI = (E × I) + M  (gCO2 per R) */
+  sciGco2PerR: number
+  /** R — Functional unit description */
+  functionalUnit: string
+  confidence: 'low' | 'medium' | 'high'
+}
+
+export interface SciTotals {
+  sciGco2PerR: number
+  eKwhPerR: number
+  mGco2PerR: number
+  iGco2PerKwh: number
+  functionalUnit: string
+  methodology: string
+}
+
 export interface AnalysisResult {
   generatedAt: string
   workspacePath: string
@@ -9,6 +32,7 @@ export interface AnalysisResult {
     waterLiters: number
     carbonKgCo2e: number
   }
+  sciTotals: SciTotals
   history: HistoryEntry[]
 }
 
@@ -16,6 +40,7 @@ export interface Feature {
   id: string
   name: string
   files: string[]
+  dependencies: string[]
   metrics: {
     loc: number
     dependencyCount: number
@@ -29,6 +54,7 @@ export interface Feature {
     isEstimated: boolean
     infrastructureTag: string | null
   }
+  sci: SciMetrics
   sustainabilityTier: 'high' | 'medium' | 'low'
   suggestions: Suggestion[]
 }
@@ -53,9 +79,9 @@ export interface HistoryEntry {
   savingsElectricityKwh: number
   savingsWaterLiters: number
   savingsCarbonKgCo2e: number
+  savingsSciGco2PerR: number
 }
 
-// apply-suggestion response
 export interface DiffResult {
   files: { path: string; newContent: string }[]
 }

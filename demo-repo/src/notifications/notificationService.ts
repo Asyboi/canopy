@@ -1,5 +1,6 @@
 import { Pool } from 'pg';
 import axios from 'axios';
+import EventSource from 'eventsource';
 
 const notificationDb = new Pool({ connectionString: process.env.NOTIFICATION_DB_URL });
 const notificationApi = axios.create({ baseURL: process.env.NOTIFICATION_API_URL });
@@ -12,26 +13,30 @@ interface Notification {
   createdAt: Date;
 }
 
-let pollingInterval: ReturnType<typeof setInterval> | null = null;
+let sseConnection: EventSource | null = null;
 
-// POLLING PATTERN: Polls the API every 3 seconds for new notifications.
-// A WebSocket or SSE connection would be far more efficient.
+// SSE PATTERN: The server pushes notifications to the client only when new ones arrive,
+// eliminating the constant HTTP requests of polling. This keeps a single long-lived
+// connection open instead of hammering the API every 3 seconds, dramatically reducing
+// CPU, network, and energy usage when notifications are infrequent.
 export function startNotificationPolling(userId: string): void {
-  pollingInterval = setInterval(async () => {
-    const response = await notificationApi.get(
-      `/api/notifications?userId=${userId}&unread=true`
-    );
-    const notifications: Notification[] = response.data;
-    for (const n of notifications) {
-      console.log(`Notification: ${n.message}`);
-    }
-  }, 3000);
+  const url = `${process.env.NOTIFICATION_API_URL}/api/notifications/stream?userId=${userId}&unread=true`;
+  sseConnection = new EventSource(url);
+
+  sseConnection.addEventListener('notification', (event: MessageEvent) => {
+    const notification: Notification = JSON.parse(event.data);
+    console.log(`Notification: ${notification.message}`);
+  });
+
+  sseConnection.addEventListener('error', (err: Event) => {
+    console.error('SSE connection error:', err);
+  });
 }
 
 export function stopNotificationPolling(): void {
-  if (pollingInterval) {
-    clearInterval(pollingInterval);
-    pollingInterval = null;
+  if (sseConnection) {
+    sseConnection.close();
+    sseConnection = null;
   }
 }
 
